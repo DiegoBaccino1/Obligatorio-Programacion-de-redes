@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Common;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Server
 {
-    class Server
+    public class Server
     {
         private static Socket _server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -23,7 +24,6 @@ namespace Server
         private const int CONNECTIONS = 10;
 
         private static bool isServerUp = false;
-
 
 
         public void StartServer()
@@ -54,7 +54,37 @@ namespace Server
 
         public void HandleClient(Socket socket)
         {
-         
+           
+            while (true)
+            {
+                int command;
+                int dataLength;
+                string direction;
+                int headerLength = HeaderConstants.GetLength();
+                var header = new byte[headerLength];
+                int received = 0;
+                
+                while (received < headerLength)
+                {
+                    received += socket.Receive(header, received, headerLength - received, SocketFlags.None);
+                }
+                
+                Header header2 = new Header(header);
+                direction=header2.GetDirection();
+                command=header2.GetCommand();
+                dataLength=header2.GetDataLength();
+                
+                var data = new byte[dataLength];
+                received = 0;
+                while (received < dataLength)
+                {
+                    received += socket.Receive(data, received, dataLength - received, SocketFlags.None);
+                }
+                
+                var word = Encoding.UTF8.GetString(data);
+                
+                Console.WriteLine("Client says: " + word);
+            }
 
         }
 

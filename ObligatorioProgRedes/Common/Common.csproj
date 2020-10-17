@@ -41,7 +41,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Protocol.cs" />
+    <Compile Include="CommandConstants.cs" />
+    <Compile Include="DataSend.cs" />
+    <Compile Include="Header.cs" />
+    <Compile Include="HeaderConstants.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Common
 {
-    public class Protocol
+    public static class HeaderConstants
     {
 
         public static string Request = "REQ";
@@ -17,6 +17,11 @@ namespace Common
         public static int CommandLength = 2;
 
         public static int DataLength = 4;
+
+        public static int GetLength()
+        {
+            return Request.Length + CommandLength + DataLength;
+        }
 
     }
 }
