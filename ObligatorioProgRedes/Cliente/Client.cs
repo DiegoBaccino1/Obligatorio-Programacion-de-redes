@@ -1,4 +1,5 @@
 ﻿using System;
+using Common;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -35,13 +36,16 @@ namespace Cliente
                 var userName = Console.ReadLine();
                 Console.WriteLine("Ingrese Contrasenia\n");
                 var userPassword = Console.ReadLine();
+
                 var IsLogged = false;
 
-                var mensaje = userName + "%" +userPassword;
+                var credentials = userName + "%" +userPassword;
+                Header header = new Header(HeaderConstants.Request, CommandConstants.Login, credentials.Length);
+                var codedMessage = DataSend.GenMenssage(credentials, header);
+                SendData(codedMessage);
+                Console.ReadLine();
 
-                CommunicateWithServer(99, mensaje);
-
-                    if (IsLogged)
+                if (IsLogged)
                     {
                         Console.WriteLine("1- Alta cliente\n");
                         Console.WriteLine("2- Cargar foto\n");
@@ -50,14 +54,13 @@ namespace Cliente
                         Console.WriteLine("5- Ver comentarios de una foto\n");
                         Console.WriteLine("6- Agregar comentarios a una foto\n");
                     }
-                while (true)
+                while (IsLogged)
                 {
-                    var dataWord = Console.ReadLine();
-                    byte[] data = Encoding.UTF8.GetBytes(dataWord);
+                    /*var data = Console.ReadLine();
+                    IsLogged = true;
+                    Header header = new Header(HeaderConstants.Request, CommandConstants.Login, data.Length);
 
-                    Header header = new Header(HeaderConstants.Request, 1, mensaje.Length);
-
-                    var codedMessge = DataSend.GenMenssage(mensaje, header);
+                    var codedMessge = DataSend.GenMenssage(credentials, header);*/
 
                     //byte[] dataLength = BitConverter.GetBytes(data.Length);
                     //int dataRead = 0;
@@ -85,14 +88,9 @@ namespace Cliente
             }
         }
 
-        public static void CreateStringProtocol(int command, string data)
+        private void SendData(byte[] message)
         {
-
-        }
-        public static void CommunicateWithServer(int command, string data)
-        {
-            CreateStringProtocol(command,data);
-            //envio comando y data al server
+            socket.Send(message, 0,message.Length, SocketFlags.None);
         }
     }
 }

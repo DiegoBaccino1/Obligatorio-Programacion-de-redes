@@ -1,4 +1,5 @@
 ﻿using Common;
+using Domain;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,6 +26,10 @@ namespace Server
 
         private static bool isServerUp = false;
 
+        List<User> UsersLogged = new List<User>();
+
+        List<User> Users = new List<User>();
+
 
         public void StartServer()
 
@@ -41,13 +46,10 @@ namespace Server
             Console.WriteLine("Listening.....");
 
             while (isServerUp)
-
             {
-
                 Socket _clientSocket = _server.Accept();
 
                 new Thread(() => HandleClient(_clientSocket)).Start();
-
             }
 
         }
@@ -80,10 +82,19 @@ namespace Server
                 {
                     received += socket.Receive(data, received, dataLength - received, SocketFlags.None);
                 }
-                
                 var word = Encoding.UTF8.GetString(data);
-                
-                Console.WriteLine("Client says: " + word);
+                switch (command)
+                {
+                    case 1:
+                        Login();
+                        break;
+                    case 2:
+                        SignUp();
+                        break;
+                    default:
+                        Console.WriteLine("Default case");
+                        break;
+                }
             }
 
         }

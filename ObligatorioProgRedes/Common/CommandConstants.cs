@@ -8,7 +8,15 @@ namespace Common
 {
     public class CommandConstants
     {
-        public static int Login = 1;
-        public static int ListUsers = 2;
+        //Diego
+        public static int SignUp = 1;
+        public static int Login = 2;
+        //Andres
+        public static int UploadFile = 3;
+        //-------------Sabado/Viernes-------------
+        public static int ListUsers = 4;
+        public static int ListFiles = 5;
+        public static int ViewComents = 6;
+        public static int AddComent = 7;
     }
 }
