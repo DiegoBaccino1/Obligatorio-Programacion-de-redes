@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -42,7 +43,9 @@ namespace Common
         {
             return this._iDataLength;
         }
-
+        public Header()
+        {
+        }
         public Header(string direction, int command, int dataLenght)
         {
             _direction = Encoding.UTF8.GetBytes(direction);
