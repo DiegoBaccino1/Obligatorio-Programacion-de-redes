@@ -11,5 +11,17 @@ namespace Domain
         public string Username { get; set; }
         public string Password { get; set; }
         public List<Photo> Photos { get; set; }
+        public override bool Equals(object obj)
+        {
+            try
+            {
+                User user = (User)obj;
+                return user.Username.Equals(this.Username);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
     }
 }
