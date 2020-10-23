@@ -60,6 +60,10 @@
       <Project>{4D32E5B1-4B62-4A47-BFC1-1C6CFB891E89}</Project>
       <Name>Domain</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Exceptions\Exceptions.csproj">
+      <Project>{4DB5B92A-0D37-492B-A397-E05EDAF9F8D4}</Project>
+      <Name>Exceptions</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
