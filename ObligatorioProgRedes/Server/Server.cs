@@ -24,12 +24,10 @@ namespace Server
         private const int BUFFER_SIZE = 1024;
 
         private const int CONNECTIONS = 10;
-        private const string OK_MESSAGE_RESPONSE = "OK";
+
         private static bool isServerUp = false;
 
         private static List<User> Users = new List<User>();
-
-        private static List<User> UsersLogged = new List<User>();
         
 
         public void StartServer()
@@ -73,7 +71,7 @@ namespace Server
                         try
                         {
                             user = Login(word);
-                            messageResponse = OK_MESSAGE_RESPONSE;
+                            messageResponse = DataTransfer.OK_MESSAGE_RESPONSE;
                             break;
                         }
                         catch (Exception)
@@ -85,7 +83,7 @@ namespace Server
                         try
                         {
                             SignUp(word);
-                            messageResponse = OK_MESSAGE_RESPONSE;
+                            messageResponse = DataTransfer.OK_MESSAGE_RESPONSE;
                             break;
                         }
                         catch (UserAlreadyExistException)
@@ -114,27 +112,21 @@ namespace Server
             string username, password;
             GetCredentials(credentials, out username, out password);
             User user = GetUserByCredentials(username, password);
-            bool exist = false;
             lock (Users)
             {
-                exist = Users.Contains(user);
-            }
-            //No me pueden borrar el user de la lista?
-            if (exist)
-            {
-                lock (UsersLogged)
+                if (Users.Contains(user))
                 {
-                    if (!UsersLogged.Contains(user))
+                    if (!user.IsLogged)
                     {
-                        UsersLogged.Add(user);
+                        user.IsLogged = true;
                         return user;
                     }
                     else
                         throw new IsLoggedException();
                 }
+                else
+                    throw new UserNotExistException();
             }
-            else
-                throw new UserNotExistException();
         }
 
         private static User GetUserByCredentials(string username, string password)
@@ -144,11 +136,6 @@ namespace Server
                 return Users.Where
                     (x => x.Username.Equals(username) && x.Password.Equals(password)).FirstOrDefault();
             }
-        }
-
-        private static bool IsLogged(User user)
-        {
-            return UsersLogged.Contains(user);
         }
         
         private static User CreateUser(string username, string password)

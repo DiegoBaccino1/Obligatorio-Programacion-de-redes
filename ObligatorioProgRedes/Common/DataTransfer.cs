@@ -9,6 +9,7 @@ namespace Common
 {
     public class DataTransfer
     {
+        public const string OK_MESSAGE_RESPONSE = "OK";
 
         public static byte[] GenMenssage(string message, Header header)
         {

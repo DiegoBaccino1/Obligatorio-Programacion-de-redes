@@ -69,7 +69,7 @@ namespace Cliente
                 DataTransferResult result = DataTransfer.RecieveData(socket);
                 var resultData = (string)result.objectResult;
                 bool isLogged = false ;
-                if (resultData.Equals("OK"))
+                if (resultData.Equals(DataTransfer.OK_MESSAGE_RESPONSE))
                 {
                     isLogged= true;
                 }
