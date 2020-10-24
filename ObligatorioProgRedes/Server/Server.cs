@@ -24,10 +24,10 @@ namespace Server
         private const int BUFFER_SIZE = 1024;
 
         private const int CONNECTIONS = 10;
-
+        private const string OK_MESSAGE_RESPONSE = "OK";
         private static bool isServerUp = false;
 
-        private static List<User> Users = new List<User>() { new User() { Username = "pepito", Password="pepeito",Photos=new List<Photo>()}};
+        private static List<User> Users = new List<User>();
 
         private static List<User> UsersLogged = new List<User>();
         
@@ -60,52 +60,44 @@ namespace Server
             User user;
             while (true)
             {
-                int command;
-                int dataLength;
-                string direction;
-                int headerLength = HeaderConstants.GetLength();
-                var header = new byte[headerLength];
-                int received = 0;
+                DataTransferResult result = DataTransfer.RecieveData(socket);
                 
-                while (received < headerLength)
-                {
-                    received += socket.Receive(header, received, headerLength - received, SocketFlags.None);
-                    
-                }
-                
-                Header header2 = new Header(header);
-                direction=header2.GetDirection();
-                command=header2.GetCommand();
-                dataLength=header2.GetDataLength();
-                
-                var data = new byte[dataLength];
-                received = 0;
-                while (received < dataLength)
-                {
-                    received += socket.Receive(data, received, dataLength - received, SocketFlags.None);
-                }
-
-                var word = Encoding.UTF8.GetString(data);
-
+                int command=result.Header.GetCommand();
+                int dataLength= result.Header.GetDataLength();
+                string direction= result.Header.GetDirection();
+                var word = (string)result.objectResult;
+                var messageResponse = "";
                 switch (command)
                 {
                     case 2:
                         try
                         {
                             user = Login(word);
+                            messageResponse = OK_MESSAGE_RESPONSE;
                             break;
                         }
                         catch (Exception)
                         {
+                            messageResponse = "Error";
                             break;
                         }
                     case 1:
-                        SignUp(word);
-                        break;
+                        try
+                        {
+                            SignUp(word);
+                            messageResponse = OK_MESSAGE_RESPONSE;
+                            break;
+                        }
+                        catch (UserAlreadyExistException)
+                        {
+                            messageResponse = "Usuraio ya existe";
+                            break;
+                        }
                     default:
                         Console.WriteLine("Invalid command");
                         break;
                 }
+                Response(command,messageResponse,socket);
             }
 
         }
@@ -183,6 +175,18 @@ namespace Server
                 else
                     throw new UserAlreadyExistException();
             }
+        }
+
+        private static void Response(int command,string message,Socket socket)
+        {
+            Header header = new Header(HeaderConstants.Response, command, message.Length);
+            var byteMessage=DataTransfer.GenMenssage(message, header);
+            DataTransfer.SendData(byteMessage,socket);
+        }
+
+        private static bool BoolResponse(int command)
+        {
+            return command == CommandConstants.Login || command == CommandConstants.AddComent || command == CommandConstants.SignUp || command == CommandConstants.UploadFile;
         }
     }
 }

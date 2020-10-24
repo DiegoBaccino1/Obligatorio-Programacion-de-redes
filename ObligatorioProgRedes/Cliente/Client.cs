@@ -66,16 +66,19 @@ namespace Cliente
                     var codedMessage = DataTransfer.GenMenssage(credentials, header);
                     DataTransfer.SendData(codedMessage, socket);
                 }
-                
-                var IsLogged = false;
+                DataTransferResult result = DataTransfer.RecieveData(socket);
+                var resultData = (string)result.objectResult;
+                bool isLogged = false ;
+                if (resultData.Equals("OK"))
+                {
+                    isLogged= true;
+                }
 
-                //IsLogged = RecivedData();
-                
+                if (isLogged)
+                {
+                    DisplayMenu();
+                }
                 while (true) { }
-                //if (IsLogged)
-                //{
-                //    DisplayMenu();
-                //}
                 //while (IsLogged)
                 //{
                 //    option = -1;
@@ -136,7 +139,7 @@ namespace Cliente
 
         private static void DisplayMenu()
         {
-            Console.WriteLine("1- Cargar foto\n");
+            Console.WriteLine("\n1- Cargar foto\n");
             Console.WriteLine("2- Listado de usuarios\n");
             Console.WriteLine("3- Listado de fotos de un usuario\n");
             Console.WriteLine("4- Ver comentarios de una foto\n");

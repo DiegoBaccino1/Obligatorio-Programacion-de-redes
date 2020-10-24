@@ -43,9 +43,16 @@
   <ItemGroup>
     <Compile Include="CommandConstants.cs" />
     <Compile Include="DataTransfer.cs" />
+    <Compile Include="DataTransferResult.cs" />
     <Compile Include="Header.cs" />
     <Compile Include="HeaderConstants.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\Domain.csproj">
+      <Project>{4D32E5B1-4B62-4A47-BFC1-1C6CFB891E89}</Project>
+      <Name>Domain</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

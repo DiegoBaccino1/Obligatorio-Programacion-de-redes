@@ -38,11 +38,10 @@ namespace Common
             socket.Send(message, 0, message.Length, SocketFlags.None);
         }
         
-        public static object RecieveData(Socket socket)
+        public static DataTransferResult RecieveData(Socket socket)
         {
-            int command;
+            DataTransferResult result = new DataTransferResult();
             int dataLength;
-            string direction;
 
             int headerLength = HeaderConstants.GetLength();
             var headerBytes = new byte[headerLength];
@@ -55,8 +54,7 @@ namespace Common
             }
 
             Header header = new Header(headerBytes);
-            direction = header.GetDirection();
-            command = header.GetCommand();
+            result.Header = header;
             dataLength = header.GetDataLength();
 
             var data = new byte[dataLength];
@@ -67,8 +65,8 @@ namespace Common
             }
 
             var word = Encoding.UTF8.GetString(data);
-
-            return word;
+            result.objectResult = word;
+            return result;
         }
     }
 }
