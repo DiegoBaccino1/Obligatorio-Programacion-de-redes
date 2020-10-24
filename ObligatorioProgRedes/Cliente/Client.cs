@@ -12,7 +12,7 @@ namespace Cliente
 {
     public class Client
     {
-        private const string SEPARATOR = "%";
+        private const string SEPARATOR = "%";//psar a common
         private static bool IsConectedToServer;
 
 
@@ -33,63 +33,92 @@ namespace Cliente
 
                 Console.WriteLine("Conectado al servidor\n");
                 Console.WriteLine("Bienvenido.....\n");
-
-                Console.WriteLine("Ingrese usuario:\n");
-                var userName = Console.ReadLine();
-                Console.WriteLine("Ingrese Contrasenia\n");
-                var userPassword = Console.ReadLine();
-
-                var IsLogged = false;
-
-                var credentials = userName + SEPARATOR + userPassword;
-                Header header = new Header(HeaderConstants.Request, CommandConstants.SignUp, credentials.Length);
-                var codedMessage = DataSend.GenMenssage(credentials, header);
-                SendData(codedMessage);
-
-                //IsLogged = RecivedData();
-                //List<string> ListaUsuario=.Value as List<string>
-                while (true) { }
-                if (IsLogged)
+                int option = -1;
+                bool exit = false;
+                string credentials ="";
+                string username = "";
+                string userPassword = "";
+                while (!exit)
                 {
-                    DisplayMenu();
-                }
-                while (IsLogged)
-                {
-                    int option = -1;
-                    int command = -1;
-                    string data = "";
-                    byte[] codedRequest = new byte[1];                    
+                    DisplayStarMenu();
+
                     option = GetOption(option);
+                    Console.WriteLine("Ingrese usuario:\n");
+                    username = Console.ReadLine();
+                    Console.WriteLine("Ingrese Contrasenia\n");
+                    userPassword = Console.ReadLine();
+                    credentials = username + SEPARATOR + userPassword;
+
                     switch (option)
                     {
+                        case 1:
+                            option = CommandConstants.SignUp;
+                            break;
                         case 2:
-                            //UpLoadPhoto();
-                            break;
-                        case 3:
-                            command=CommandConstants.ListUsers;
-                            break;
-                        case 4:
-                            command=CommandConstants.ListFiles;
-                            break;
-                        case 5:
-                            command=CommandConstants.ViewComents;
-                            break;
-                        case 6:
-                            command=CommandConstants.AddComent;
-                            data = Console.ReadLine();                            
+                            option = CommandConstants.Login;
+                            exit = true;
                             break;
                         default:
-                            Console.WriteLine("Invalid command");
+                            Console.WriteLine("Opcion Invalida");
                             break;
                     }
-                    header = new Header(HeaderConstants.Request, command, data.Length);
-                    codedRequest = DataSend.GenMenssage(data, header);
-                    SendData(codedRequest);
+                    Header header = new Header(HeaderConstants.Request, option, credentials.Length);
+                    var codedMessage = DataTransfer.GenMenssage(credentials, header);
+                    DataTransfer.SendData(codedMessage, socket);
                 }
+                
+                var IsLogged = false;
+
+                //IsLogged = RecivedData();
+                
+                while (true) { }
+                //if (IsLogged)
+                //{
+                //    DisplayMenu();
+                //}
+                //while (IsLogged)
+                //{
+                //    option = -1;
+                //    int command = -1;
+                //    string data = "";
+                //    byte[] codedRequest = new byte[1];                    
+                //    option = GetOption(option);
+                //    switch (option)
+                //    {
+                //        case 2:
+                //            //UpLoadPhoto();
+                //            break;
+                //        case 3:
+                //            command=CommandConstants.ListUsers;
+                //            break;
+                //        case 4:
+                //            command=CommandConstants.ListFiles;
+                //            break;
+                //        case 5:
+                //            command=CommandConstants.ViewComents;
+                //            break;
+                //        case 6:
+                //            command=CommandConstants.AddComent;
+                //            data = Console.ReadLine();                            
+                //            break;
+                //        default:
+                //            Console.WriteLine("Invalid command");
+                //            break;
+                //    }
+                //    header = new Header(HeaderConstants.Request, command, data.Length);
+                //    codedRequest = DataSend.GenMenssage(data, header);
+                //    DataTransfer.SendData(codedMessage,socket);
+                //}
             }
             catch (Exception)
             {
             }
+        }
+
+        private static void DisplayStarMenu()
+        {
+            Console.WriteLine("1-Alta Usuario");
+            Console.WriteLine("2-Log in");
         }
 
         private static int GetOption(int option)
@@ -112,11 +141,6 @@ namespace Cliente
             Console.WriteLine("3- Listado de fotos de un usuario\n");
             Console.WriteLine("4- Ver comentarios de una foto\n");
             Console.WriteLine("5- Agregar comentarios a una foto\n");
-        }
-
-        private void SendData(byte[] message)
-        {
-            socket.Send(message, 0,message.Length, SocketFlags.None);
         }
     }
 }

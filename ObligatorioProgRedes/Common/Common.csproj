@@ -42,7 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandConstants.cs" />
-    <Compile Include="DataSend.cs" />
+    <Compile Include="DataTransfer.cs" />
     <Compile Include="Header.cs" />
     <Compile Include="HeaderConstants.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

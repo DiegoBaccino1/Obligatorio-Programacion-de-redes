@@ -19,9 +19,9 @@ namespace Server
 
             Header header = new Header(HeaderConstants.Request,CommandConstants.Login, mensaje.Length);
 
-            var codedMessge = DataSend.GenMenssage(mensaje, header);
+            var codedMessge = DataTransfer.GenMenssage(mensaje, header);
 
-            Console.WriteLine(DataSend.DecodeMessage(codedMessge));
+            Console.WriteLine(DataTransfer.DecodeMessage(codedMessge));
 
         }
     }

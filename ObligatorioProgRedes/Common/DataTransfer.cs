@@ -1,0 +1,74 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Common
+{
+    public class DataTransfer
+    {
+
+        public static byte[] GenMenssage(string message, Header header)
+        {
+            byte[] codedMessage = Encoding.UTF8.GetBytes(message);
+            byte[] headerBytes = header.GenRequest();
+
+            byte[] fullMessage = new byte[headerBytes.Length + codedMessage.Length];
+            Array.Copy(headerBytes,0,fullMessage,0,headerBytes.Length);
+            Array.Copy(codedMessage, 0, fullMessage, headerBytes.Length, codedMessage.Length);
+
+            return fullMessage;
+        }
+
+        public static string DecodeMessage (byte[] codedMessage)
+        {
+            string decodedMessage;
+            int index = HeaderConstants.GetLength();
+            int count = codedMessage.Length - index;
+
+            decodedMessage = Encoding.UTF8.GetString(codedMessage,index,count);
+
+            return decodedMessage;
+        }
+        
+        public static void SendData(byte[] message,Socket socket)
+        {
+            socket.Send(message, 0, message.Length, SocketFlags.None);
+        }
+        
+        public static object RecieveData(Socket socket)
+        {
+            int command;
+            int dataLength;
+            string direction;
+
+            int headerLength = HeaderConstants.GetLength();
+            var headerBytes = new byte[headerLength];
+            int received = 0;
+
+            while (received < headerLength)
+            {
+                received += socket.Receive(headerBytes, received, headerLength - received, SocketFlags.None);
+
+            }
+
+            Header header = new Header(headerBytes);
+            direction = header.GetDirection();
+            command = header.GetCommand();
+            dataLength = header.GetDataLength();
+
+            var data = new byte[dataLength];
+            received = 0;
+            while (received < dataLength)
+            {
+                received += socket.Receive(data, received, dataLength - received, SocketFlags.None);
+            }
+
+            var word = Encoding.UTF8.GetString(data);
+
+            return word;
+        }
+    }
+}
