@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using MyMessaging;
 
 namespace Cliente
 {
@@ -66,13 +67,11 @@ namespace Cliente
                     var codedMessage = DataTransfer.GenMenssage(credentials, header);
                     DataTransfer.SendData(codedMessage, socket);
                 }
-                DataTransferResult result = DataTransfer.RecieveData(socket);
+                StringDataTransfer dataTransfer = new StringDataTransfer();
+                DataTransferResult result = dataTransfer.RecieveData(socket);
+                
                 var resultData = (string)result.objectResult;
-                bool isLogged = false ;
-                if (resultData.Equals(DataTransfer.OK_MESSAGE_RESPONSE))
-                {
-                    isLogged= true;
-                }
+                bool isLogged =  Boolean.Parse(resultData);
 
                 if (isLogged)
                 {

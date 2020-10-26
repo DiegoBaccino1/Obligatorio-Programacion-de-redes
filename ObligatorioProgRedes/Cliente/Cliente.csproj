@@ -56,6 +56,10 @@
       <Project>{a73e8f46-9cce-4d95-a521-b4181d4f4207}</Project>
       <Name>Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MyMessaging\MyMessaging.csproj">
+      <Project>{1495A669-25D7-46E2-94ED-684BA958F80C}</Project>
+      <Name>MyMessaging</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

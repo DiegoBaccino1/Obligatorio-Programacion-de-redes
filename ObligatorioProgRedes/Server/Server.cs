@@ -1,15 +1,14 @@
 ﻿using Common;
 using Domain;
+using MyMessaging.Responses;
 using Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using MyMessaging;
 
 namespace Server
 {
@@ -55,49 +54,49 @@ namespace Server
 
         public void HandleClient(Socket socket)
         {
+            DataTransferSuper transfer = new StringDataTransfer();
+            Response response = new StringResponse();
             User user;
             while (true)
             {
-                DataTransferResult result = DataTransfer.RecieveData(socket);
                 
+                DataTransferResult result = transfer.RecieveData(socket);
+
                 int command=result.Header.GetCommand();
                 int dataLength= result.Header.GetDataLength();
                 string direction= result.Header.GetDirection();
                 var word = (string)result.objectResult;
-                var messageResponse = "";
                 switch (command)
                 {
                     case 2:
                         try
                         {
                             user = Login(word);
-                            messageResponse = DataTransfer.OK_MESSAGE_RESPONSE;
+                            response = new StringResponse();
+                            var ret = "true";
+                            response.SendResponse(command, ret, socket, ret.Length);
                             break;
                         }
                         catch (Exception)
                         {
-                            messageResponse = "Error";
                             break;
                         }
                     case 1:
                         try
                         {
                             SignUp(word);
-                            messageResponse = DataTransfer.OK_MESSAGE_RESPONSE;
                             break;
                         }
                         catch (UserAlreadyExistException)
                         {
-                            messageResponse = "Usuraio ya existe";
                             break;
                         }
                     default:
                         Console.WriteLine("Invalid command");
                         break;
                 }
-                Response(command,messageResponse,socket);
+                //Response(command,messageResponse,socket);
             }
-
         }
 
         private static void GetCredentials(string word, out string username, out string password)
