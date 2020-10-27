@@ -8,13 +8,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using MyMessaging;
+using MyMessaging.DataTransfer;
+using System.Runtime.InteropServices;
 
 namespace Cliente
 {
     public class Client
     {
         private const string SEPARATOR = "%";//psar a common
-        private static bool IsConectedToServer;
 
 
         private static readonly IPEndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 0);
@@ -39,6 +40,9 @@ namespace Cliente
                 string credentials ="";
                 string username = "";
                 string userPassword = "";
+                Header header;
+                DataTransferSuper dataTransferReciver=new StringDataTransfer();
+                DataTransferSuper dataTransferSender = new StringDataTransfer();
                 while (!exit)
                 {
                     DisplayStarMenu();
@@ -63,54 +67,61 @@ namespace Cliente
                             Console.WriteLine("Opcion Invalida");
                             break;
                     }
-                    Header header = new Header(HeaderConstants.Request, option, credentials.Length);
-                    var codedMessage = DataTransfer.GenMenssage(credentials, header);
-                    DataTransfer.SendData(codedMessage, socket);
+                    header = new Header(HeaderConstants.Request, option, credentials.Length);
+                    var codedMessage = dataTransferSender.GenMenssage(credentials, header);
+                    DataTransferSuper.SendData(codedMessage, socket);
                 }
-                StringDataTransfer dataTransfer = new StringDataTransfer();
-                DataTransferResult result = dataTransfer.RecieveData(socket);
-                
-                var resultData = (string)result.objectResult;
-                bool isLogged =  Boolean.Parse(resultData);
+                dataTransferReciver = new StringDataTransfer();
+                DataTransferResult result = dataTransferReciver.RecieveData(socket);
 
+                dynamic resultData = (string)result.objectResult;
+                bool isLogged =  Boolean.Parse(resultData);
                 if (isLogged)
                 {
                     DisplayMenu();
                 }
-                while (true) { }
-                //while (IsLogged)
-                //{
-                //    option = -1;
-                //    int command = -1;
-                //    string data = "";
-                //    byte[] codedRequest = new byte[1];                    
-                //    option = GetOption(option);
-                //    switch (option)
-                //    {
-                //        case 2:
-                //            //UpLoadPhoto();
-                //            break;
-                //        case 3:
-                //            command=CommandConstants.ListUsers;
-                //            break;
-                //        case 4:
-                //            command=CommandConstants.ListFiles;
-                //            break;
-                //        case 5:
-                //            command=CommandConstants.ViewComents;
-                //            break;
-                //        case 6:
-                //            command=CommandConstants.AddComent;
-                //            data = Console.ReadLine();                            
-                //            break;
-                //        default:
-                //            Console.WriteLine("Invalid command");
-                //            break;
-                //    }
-                //    header = new Header(HeaderConstants.Request, command, data.Length);
-                //    codedRequest = DataSend.GenMenssage(data, header);
-                //    DataTransfer.SendData(codedMessage,socket);
-                //}
+                while (isLogged)
+                {
+                    option = -1;
+                    int command = -1;
+                    string data = "";
+                    byte[] codedRequest = new byte[1];
+                    option = GetOption(option);
+                    switch (option)
+                    {
+                        case 3:
+                            //UpLoadPhoto();
+                            break;
+                        case CommandConstants.ListUsers:
+                            command = CommandConstants.ListUsers;
+                            dataTransferReciver = new ListStringDataTransfer();
+                            //result = dataTransfer.RecieveData(socket);
+                            //resultData = result.objectResult as List<string>;
+                            //Display(resultData);
+                            break;
+                        case 5:
+                            command = CommandConstants.ListFiles;
+                            break;
+                        case 6:
+                            command = CommandConstants.ViewComents;
+                            break;
+                        case 7:
+                            command = CommandConstants.AddComent;
+                            data = Console.ReadLine();
+                            break;
+                        default:
+                            Console.WriteLine("Invalid command");
+                            break;
+                    }
+                    header = new Header(HeaderConstants.Request, command, data.Length);
+                    codedRequest = dataTransferSender.GenMenssage(data, header);
+                    DataTransferSuper.SendData(codedRequest, socket);
+
+                    result = dataTransferReciver.RecieveData(socket);
+                    resultData = result.objectResult as List<string>;
+                    Display(resultData);
+
+                }
             }
             catch (Exception)
             {
@@ -119,8 +130,18 @@ namespace Cliente
 
         private static void DisplayStarMenu()
         {
-            Console.WriteLine("1-Alta Usuario");
-            Console.WriteLine("2-Log in");
+            Console.WriteLine(CommandConstants.SignUp + "-Alta Usuario");
+            Console.WriteLine(CommandConstants.Login + "-Log in");
+        }
+
+        private static void Display(List<string> list)
+        {
+            int i = 0;
+            Console.WriteLine("Usuarios conectados:\n");
+            foreach (string username in list)
+            {
+                Console.WriteLine(++i + " - " + username);
+            }
         }
 
         private static int GetOption(int option)
@@ -138,11 +159,11 @@ namespace Cliente
 
         private static void DisplayMenu()
         {
-            Console.WriteLine("\n1- Cargar foto\n");
-            Console.WriteLine("2- Listado de usuarios\n");
-            Console.WriteLine("3- Listado de fotos de un usuario\n");
-            Console.WriteLine("4- Ver comentarios de una foto\n");
-            Console.WriteLine("5- Agregar comentarios a una foto\n");
+            Console.WriteLine("\n"+CommandConstants.UploadFile+"- Cargar foto\n");
+            Console.WriteLine(CommandConstants.ListUsers+"- Listado de usuarios\n");
+            Console.WriteLine(CommandConstants.ListFiles+"- Listado de fotos de un usuario\n");
+            Console.WriteLine(CommandConstants.ViewComents+"- Ver comentarios de una foto\n");
+            Console.WriteLine(CommandConstants.AddComent+"- Agregar comentarios a una foto\n");
         }
     }
 }

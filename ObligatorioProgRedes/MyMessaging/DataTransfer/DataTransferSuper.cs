@@ -59,15 +59,6 @@ namespace MyMessaging
             result.objectResult = word;
             return result;
         }
-        //public static string DecodeMessage(byte[] codedMessage)
-        //{
-        //    string decodedMessage;
-        //    int index = HeaderConstants.GetLength();
-        //    int count = codedMessage.Length - index;
 
-        //    decodedMessage = DecastMessage(codedMessage, index, count);
-
-        //    return decodedMessage;
-        //}
     }
 }

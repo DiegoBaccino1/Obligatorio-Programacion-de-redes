@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using MyMessaging;
+using MyMessaging.DataTransfer;
 
 namespace Server
 {
@@ -66,6 +67,7 @@ namespace Server
                 int dataLength= result.Header.GetDataLength();
                 string direction= result.Header.GetDirection();
                 var word = (string)result.objectResult;
+                dynamic responseData;
                 switch (command)
                 {
                     case 2:
@@ -73,30 +75,55 @@ namespace Server
                         {
                             user = Login(word);
                             response = new StringResponse();
-                            var ret = "true";
-                            response.SendResponse(command, ret, socket, ret.Length);
+                            responseData = "true";
+                            response.SendResponse(command, responseData, socket, responseData.Length);
                             break;
                         }
                         catch (Exception)
                         {
+                            response = new StringResponse();
+                            responseData = "false";
+                            response.SendResponse(command, responseData, socket, responseData.Length);
                             break;
                         }
                     case 1:
                         try
                         {
                             SignUp(word);
+                            //response = new StringResponse();
+                            //responseData = "true";
+                            //response.SendResponse(command, responseData, socket, responseData.Length);
                             break;
                         }
                         catch (UserAlreadyExistException)
                         {
                             break;
                         }
+                    case CommandConstants.ListUsers:
+                        List<string> usersList = GetUsers();
+                        response = new ListStringResponse();
+                        responseData = usersList;
+                        int responseDataLength = ListStringDataTransfer.ListLength(usersList);
+                        response.SendResponse(command, responseData, socket, responseDataLength);
+                        break;
                     default:
                         Console.WriteLine("Invalid command");
                         break;
                 }
-                //Response(command,messageResponse,socket);
             }
+        }
+
+        private List<string> GetUsers()
+        {
+            List<string> users = new List<string>();
+            lock (Users)
+            {
+                foreach(User user in Users) 
+                {
+                        users.Add(user.Username);
+                }
+            }
+            return users;
         }
 
         private static void GetCredentials(string word, out string username, out string password)
@@ -163,16 +190,17 @@ namespace Server
             }
         }
 
-        private static void Response(int command,string message,Socket socket)
-        {
-            Header header = new Header(HeaderConstants.Response, command, message.Length);
-            var byteMessage=DataTransfer.GenMenssage(message, header);
-            DataTransfer.SendData(byteMessage,socket);
-        }
+        //private static void Response(int command,string message,Socket socket)
+        //{
+        //    Header header = new Header(HeaderConstants.Response, command, message.Length);
+        //    var byteMessage=DataTransfer.GenMenssage(message, header);
+        //    DataTransfer.SendData(byteMessage,socket);
+        //}
 
-        private static bool BoolResponse(int command)
-        {
-            return command == CommandConstants.Login || command == CommandConstants.AddComent || command == CommandConstants.SignUp || command == CommandConstants.UploadFile;
-        }
+        //private static bool BoolResponse(int command)
+        //{
+        //    return command == CommandConstants.Login || command == CommandConstants.AddComent
+        //|| command == CommandConstants.SignUp || command == CommandConstants.UploadFile;
+        //}
     }
 }

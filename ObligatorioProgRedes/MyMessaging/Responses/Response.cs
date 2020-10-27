@@ -18,5 +18,6 @@ namespace MyMessaging.Responses
             var byteMessage = CodeMessage(data, header);
             DataTransferSuper.SendData(byteMessage, socket);
         }
+
     }
 }
