@@ -10,7 +10,11 @@ namespace Domain
     {
         public byte[] File { get; set; }
         public string Name { get; set; }
-        public User User { get; set; }
         public List<string> Comments { get; set; }
+
+        public override string ToString()
+        {
+            return this.Name;
+        }
     }
 }

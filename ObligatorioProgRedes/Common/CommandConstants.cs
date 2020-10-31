@@ -12,6 +12,7 @@ namespace Common
         public const int Login = 2;
         //Andres
         public const int UploadFile = 3;
+        public const int UploadFileSignal = 31;
         //Diego
         public const  int ListUsers = 4;
         //Andres

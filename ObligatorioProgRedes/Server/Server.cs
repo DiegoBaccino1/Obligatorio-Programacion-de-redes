@@ -10,6 +10,8 @@ using System.Net.Sockets;
 using System.Threading;
 using MyMessaging;
 using MyMessaging.DataTransfer;
+using Common.Interfaces;
+using System.IO;
 
 namespace Server
 {
@@ -66,7 +68,12 @@ namespace Server
                 int command=result.Header.GetCommand();
                 int dataLength= result.Header.GetDataLength();
                 string direction= result.Header.GetDirection();
-                var word = (string)result.objectResult;
+                string word= "";
+                byte[] dataFile;
+                if (command != 31)
+                {
+                    word = (string)result.objectResult;
+                };
                 dynamic responseData;
                 switch (command)
                 {
@@ -106,11 +113,97 @@ namespace Server
                         int responseDataLength = ListStringDataTransfer.ListLength(usersList);
                         response.SendResponse(command, responseData, socket, responseDataLength);
                         break;
+                    case CommandConstants.ListFiles:
+                        User userPhoto = new User();
+                        userPhoto.Username = word;
+                        List<string> fileList = GetUserPhotos(userPhoto);
+                        response = new ListStringResponse();
+                        responseData = fileList;
+                        responseDataLength = ListStringDataTransfer.ListLength(fileList);
+                        response.SendResponse(command, responseData, socket, responseDataLength);
+                        break;
+                    case CommandConstants.UploadFile:
+                        Photo photo = ReciveFile(word, socket);
+
+                        break;
                     default:
                         Console.WriteLine("Invalid command");
                         break;
                 }
             }
+        }
+
+        private Photo ReciveFile(string fileData, Socket socket)
+        {
+            IFileSenderHandler senderHandler = new FileSenderHandler();
+            Photo photo = new Photo();
+            string fileName, fileSize;
+            GetCredentials(fileData, out fileName, out fileSize);
+            long fileSizeConverted = long.Parse(fileSize);
+            var segments = (fileSizeConverted / FileSenderHandler.FileSegmentSize);
+            //segments = long.Parse(String.Format("{0:0}"), (System.Globalization.NumberStyles)segments);
+            segments = segments * FileSenderHandler.FileSegmentSize == fileSizeConverted ? segments : segments + 1;
+
+            long offset = 0;
+            long currentSegments = 1;
+
+            while (fileSizeConverted > offset)
+            {
+                ByteDataTransfer dataTransfer = new ByteDataTransfer();
+                DataTransferResult result = dataTransfer.RecieveData(socket);
+                if(result.Header.GetCommand()!= 31)
+                {
+                    throw new Exception();
+                }
+                byte[] fileDataRecived = (byte[])result.objectResult;
+                int size = 0;
+                if (currentSegments == segments)
+                {
+                    size = (int)(fileSizeConverted - offset);
+                }
+                else
+                {
+                    size = (int)FileSenderHandler.FileSegmentSize;
+                }
+
+                senderHandler.Write(fileName, fileDataRecived);
+                offset += size;
+
+
+            }
+            //string path = Directory.GetCurrentDirectory()+ "/" + fileName;
+
+            //  /home/ltato                         /    miFoto.png
+
+            photo.Name = fileName;
+            photo.Comments = new List<string>();
+            return photo;
+        }
+
+        private void GetFileData(string fileData, out string fileName, out string fileSize)
+        {
+            throw new NotImplementedException();
+        }
+
+        private List<string> GetUserPhotos(User userPhoto)
+        {
+            List<Photo> fileList = new List<Photo>();
+            lock (Users)
+            {
+                foreach(User user in Users)
+                {
+                    if (userPhoto.Equals(user))
+                    {
+                        fileList = user.Photos;
+                    }
+                }
+            }
+            List<string> result = new List<string>();
+            foreach(Photo photo in fileList)
+            {
+                result.Add(photo.ToString());
+            }
+            return result;
         }
 
         private List<string> GetUsers()

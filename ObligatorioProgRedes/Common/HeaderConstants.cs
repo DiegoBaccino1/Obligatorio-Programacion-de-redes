@@ -18,6 +18,8 @@ namespace Common
 
         public static int DataLength = 4;
 
+
+
         public static int GetLength()
         {
             return Request.Length + CommandLength + DataLength;

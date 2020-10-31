@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using MyMessaging;
 using MyMessaging.DataTransfer;
 using System.Runtime.InteropServices;
+using System.IO;
+using Common.Interfaces;
 
 namespace Cliente
 {
@@ -89,8 +91,13 @@ namespace Cliente
                     option = GetOption(option);
                     switch (option)
                     {
-                        case 3:
+                        case CommandConstants.UploadFile:
                             //UpLoadPhoto();
+                            command = CommandConstants.UploadFile;
+                            Console.WriteLine("Ingrese el path del archivo");
+                            var path = Console.ReadLine();
+                            SendFile(path);
+                            while (true) ;
                             break;
                         case CommandConstants.ListUsers:
                             command = CommandConstants.ListUsers;
@@ -101,6 +108,12 @@ namespace Cliente
                             break;
                         case 5:
                             command = CommandConstants.ListFiles;
+                            Console.WriteLine("Ingrese el usuario");
+                            data = Console.ReadLine();
+                            
+                            //dataTransferReciver = new ListStringDataTransfer();
+                            //result = dataTransferReciver.RecieveData(socket);
+
                             break;
                         case 6:
                             command = CommandConstants.ViewComents;
@@ -126,6 +139,56 @@ namespace Cliente
             catch (Exception)
             {
             }
+        }
+
+        private void SendFile(string path)
+        {
+            
+            DataTransferSuper dataTransferSender = new StringDataTransfer();
+          
+            IFileSenderHandler senderHandler = new FileSenderHandler();
+            IFileHandler fileHandler = new FileHandler();
+            long fileSize = fileHandler.GetFileSize(path);
+            string fileName = fileHandler.GetFileName(path);
+            string message = fileName+ SEPARATOR + fileSize;
+            Header header = new Header(HeaderConstants.Request, CommandConstants.UploadFile, message.Length);
+
+            var codedMessage = dataTransferSender.GenMenssage(message, header);
+            DataTransferSuper.SendData(codedMessage, socket);
+
+            long segments = (fileSize / FileSenderHandler.FileSegmentSize);
+            segments = long.Parse(String.Format("{0:0}"), (System.Globalization.NumberStyles)segments);
+
+            long offset = 0;
+            long currentSegments= 1;
+
+            while(fileSize > offset)
+            {
+                byte[] fileData;
+                int size=0;
+                if(currentSegments == segments)
+                {
+                    size = (int)(fileSize - offset);
+                }
+                else
+                {
+                    size = (int)FileSenderHandler.FileSegmentSize;
+                }
+
+                fileData = senderHandler.Read(path, offset, size);
+                offset += size;
+
+                Header header1 = new Header(HeaderConstants.Request, CommandConstants.UploadFileSignal, size);
+
+                dataTransferSender = new ByteDataTransfer();
+                
+                var data = dataTransferSender.GenMenssage(fileData, header1);
+
+                DataTransferSuper.SendData(data, socket);
+                
+            }
+
+
         }
 
         private static void DisplayStarMenu()
