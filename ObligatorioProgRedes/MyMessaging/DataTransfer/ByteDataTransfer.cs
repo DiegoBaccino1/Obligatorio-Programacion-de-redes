@@ -15,7 +15,7 @@ namespace MyMessaging.DataTransfer
 
         protected override object DecodeMessage(byte[] data)
         {
-            throw new NotImplementedException();
+            return data;
         }
     }
 }

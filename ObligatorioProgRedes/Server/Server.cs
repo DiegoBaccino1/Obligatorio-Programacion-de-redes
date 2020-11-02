@@ -60,16 +60,16 @@ namespace Server
             DataTransferSuper transfer = new StringDataTransfer();
             Response response = new StringResponse();
             User user;
+            string fileName = "";
             while (true)
             {
-                
                 DataTransferResult result = transfer.RecieveData(socket);
 
                 int command=result.Header.GetCommand();
                 int dataLength= result.Header.GetDataLength();
                 string direction= result.Header.GetDirection();
-                string word= "";
-                byte[] dataFile;
+                string word = "";
+                
                 if (command != 31)
                 {
                     word = (string)result.objectResult;
@@ -77,7 +77,7 @@ namespace Server
                 dynamic responseData;
                 switch (command)
                 {
-                    case 2:
+                    case CommandConstants.Login:
                         try
                         {
                             user = Login(word);
@@ -93,7 +93,7 @@ namespace Server
                             response.SendResponse(command, responseData, socket, responseData.Length);
                             break;
                         }
-                    case 1:
+                    case CommandConstants.SignUp:
                         try
                         {
                             SignUp(word);
@@ -123,8 +123,14 @@ namespace Server
                         response.SendResponse(command, responseData, socket, responseDataLength);
                         break;
                     case CommandConstants.UploadFile:
-                        Photo photo = ReciveFile(word, socket);
-
+                        long fileSize;
+                        ReciveFileData(word,out fileName,out fileSize);
+                        transfer = new ByteDataTransfer();
+                        break;
+                    case CommandConstants.UploadFileSignal:
+                        byte[] fileBytes = (byte[])result.objectResult;
+                        IFileSenderHandler senderHandler = new FileSenderHandler();
+                        senderHandler.Write(fileName, fileBytes);
                         break;
                     default:
                         Console.WriteLine("Invalid command");
@@ -133,51 +139,53 @@ namespace Server
             }
         }
 
-        private Photo ReciveFile(string fileData, Socket socket)
+        private void ReciveFile2(Socket socket)
         {
-            IFileSenderHandler senderHandler = new FileSenderHandler();
-            Photo photo = new Photo();
-            string fileName, fileSize;
-            GetCredentials(fileData, out fileName, out fileSize);
-            long fileSizeConverted = long.Parse(fileSize);
-            var segments = (fileSizeConverted / FileSenderHandler.FileSegmentSize);
-            //segments = long.Parse(String.Format("{0:0}"), (System.Globalization.NumberStyles)segments);
-            segments = segments * FileSenderHandler.FileSegmentSize == fileSizeConverted ? segments : segments + 1;
+            throw new NotImplementedException();
+        }
+
+        private void ReciveFileData(string data,out string fileName,out long fileSize)
+        {
+            string fileSizeAux;
+            GetCredentials(data, out fileName, out fileSizeAux);
+            fileSize = long.Parse(fileSizeAux);
+        }
+
+        private void ReciveFile(long fileSize,string fileName, Socket socket,ref bool fullRecived)
+        {
+            var segments = (fileSize / FileSenderHandler.FileSegmentSize);
+            segments = segments * FileSenderHandler.FileSegmentSize == fileSize ? segments : segments + 1;
 
             long offset = 0;
             long currentSegments = 1;
 
-            while (fileSizeConverted > offset)
+            IFileSenderHandler senderHandler = new FileSenderHandler();
+            while (fileSize > offset)
             {
-                ByteDataTransfer dataTransfer = new ByteDataTransfer();
-                DataTransferResult result = dataTransfer.RecieveData(socket);
-                if(result.Header.GetCommand()!= 31)
+                ByteDataTransfer transfer = new ByteDataTransfer();
+                DataTransferResult result = transfer.RecieveData(socket);
+                if (result.Header.GetCommand() == 31)
                 {
-                    throw new Exception();
-                }
-                byte[] fileDataRecived = (byte[])result.objectResult;
-                int size = 0;
-                if (currentSegments == segments)
-                {
-                    size = (int)(fileSizeConverted - offset);
-                }
-                else
-                {
-                    size = (int)FileSenderHandler.FileSegmentSize;
-                }
+                    byte[] fileDataRecived = (byte[])result.objectResult;
+                    int size = 0;
+                    if (currentSegments == segments)
+                    {
+                        size = (int)(fileSize - offset);
+                    }
+                    else
+                    {
+                        size = (int)FileSenderHandler.FileSegmentSize;
+                    }
 
-                senderHandler.Write(fileName, fileDataRecived);
-                offset += size;
-
-
+                    senderHandler.Write(fileName, fileDataRecived);
+                    offset += size;
+                    currentSegments++;
+                }
             }
-            //string path = Directory.GetCurrentDirectory()+ "/" + fileName;
+           Console.WriteLine(Directory.GetCurrentDirectory());
 
             //  /home/ltato                         /    miFoto.png
-
-            photo.Name = fileName;
-            photo.Comments = new List<string>();
-            return photo;
+            fullRecived = true;
         }
 
         private void GetFileData(string fileData, out string fileName, out string fileSize)
