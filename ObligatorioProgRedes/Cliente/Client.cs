@@ -78,12 +78,15 @@ namespace Cliente
 
                 dynamic resultData = (string)result.objectResult;
                 bool isLogged =  Boolean.Parse(resultData);
-                if (isLogged)
-                {
-                    DisplayMenu();
-                }
+                
+
                 while (isLogged)
                 {
+                    if (isLogged)
+                    {
+                        DisplayMenu();
+                    }
+                    bool needToSend = false;
                     option = -1;
                     int command = -1;
                     string data = "";
@@ -92,12 +95,10 @@ namespace Cliente
                     switch (option)
                     {
                         case CommandConstants.UploadFile:
-                            //UpLoadPhoto();
                             command = CommandConstants.UploadFile;
                             Console.WriteLine("Ingrese el path del archivo");
                             var path = Console.ReadLine();
                             SendFile(path);
-                            while (true) ;
                             break;
                         case CommandConstants.ListUsers:
                             command = CommandConstants.ListUsers;
@@ -126,14 +127,16 @@ namespace Cliente
                             Console.WriteLine("Invalid command");
                             break;
                     }
-                    header = new Header(HeaderConstants.Request, command, data.Length);
-                    codedRequest = dataTransferSender.GenMenssage(data, header);
-                    DataTransferSuper.SendData(codedRequest, socket);
+                    if (needToSend)
+                    {
+                        header = new Header(HeaderConstants.Request, command, data.Length);
+                        codedRequest = dataTransferSender.GenMenssage(data, header);
+                        DataTransferSuper.SendData(codedRequest, socket);
 
-                    result = dataTransferReciver.RecieveData(socket);
-                    resultData = result.objectResult as List<string>;
-                    Display(resultData);
-
+                        result = dataTransferReciver.RecieveData(socket);
+                        resultData = result.objectResult as List<string>;
+                        Display(resultData);
+                    }
                 }
             }
             catch (Exception)
@@ -157,7 +160,7 @@ namespace Cliente
             DataTransferSuper.SendData(codedMessage, socket);
 
             long segments = (fileSize / FileSenderHandler.FileSegmentSize);
-            segments = long.Parse(String.Format("{0:0}"), (System.Globalization.NumberStyles)segments);
+            segments = segments * FileSenderHandler.FileSegmentSize == fileSize ? segments : segments + 1;
 
             long offset = 0;
             long currentSegments= 1;
@@ -169,26 +172,25 @@ namespace Cliente
                 if(currentSegments == segments)
                 {
                     size = (int)(fileSize - offset);
+                    fileData = senderHandler.Read(path, offset, size);
+                    offset += size;
+                    currentSegments++;
                 }
                 else
                 {
                     size = (int)FileSenderHandler.FileSegmentSize;
+                    fileData = senderHandler.Read(path, offset, size);
+                    offset += size;
+                    currentSegments++;
                 }
 
-                fileData = senderHandler.Read(path, offset, size);
-                offset += size;
-
-                Header header1 = new Header(HeaderConstants.Request, CommandConstants.UploadFileSignal, size);
-
                 dataTransferSender = new ByteDataTransfer();
+                Header header1 = new Header(HeaderConstants.Request, CommandConstants.UploadFileSignal, size);
                 
                 var data = dataTransferSender.GenMenssage(fileData, header1);
-
-                DataTransferSuper.SendData(data, socket);
-                
+                Console.WriteLine("Mande paquete "+header1.GetCommand());
+                DataTransferSuper.SendData(data, socket);      
             }
-
-
         }
 
         private static void DisplayStarMenu()
