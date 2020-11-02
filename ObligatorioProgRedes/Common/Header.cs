@@ -43,15 +43,13 @@ namespace Common
         {
             return this._iDataLength;
         }
-        public Header()
-        {
-        }
+
         public Header(string direction, int command, int dataLenght)
         {
             _direction = Encoding.UTF8.GetBytes(direction);
             var commandToString = command.ToString("D2");
             _command = Encoding.UTF8.GetBytes(commandToString);
-            var dataLengthToString = dataLenght.ToString("D4");
+            var dataLengthToString = dataLenght.ToString("D5");
             _dataLength = Encoding.UTF8.GetBytes(dataLengthToString);
         }
         public Header(byte[] header)
