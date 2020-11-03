@@ -12,6 +12,7 @@ using MyMessaging;
 using MyMessaging.DataTransfer;
 using Common.Interfaces;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Server
 {
@@ -114,7 +115,7 @@ namespace Server
                         response.SendResponse(command, responseData, socket, responseDataLength);
                         break;
                     case CommandConstants.ListFiles:
-                        User userPhoto = new User();
+                        User userPhoto = new User(); //TO DO ESTO HAY QUE MOVERLO DE ACA
                         userPhoto.Username = word;
                         List<string> fileList = GetUserPhotos(userPhoto);
                         response = new ListStringResponse();
@@ -132,11 +133,51 @@ namespace Server
                         IFileSenderHandler senderHandler = new FileSenderHandler();
                         senderHandler.Write(fileName, fileBytes);
                         break;
+                    case CommandConstants.AddComent:
+                        try
+                        {
+                            AddComment(word);
+                        }catch(Exception)
+                        {
+                        }
+                        break;
+                    case CommandConstants.ViewComents:
+                        List<string> comments;
+                        string userName, photo;
+                        GetCredentials(word,out userName, out photo);
+                        Photo photoForComments = GetPhoto(userName, photo);
+                        comments = photoForComments.Comments;
+
+                        response = new ListStringResponse();
+                        responseData = comments;
+                        responseDataLength = ListStringDataTransfer.ListLength(comments);
+                        response.SendResponse(command, responseData, socket, responseDataLength);
+                        break;
+
                     default:
                         Console.WriteLine("Invalid command");
                         break;
                 }
             }
+        }
+
+        private void AddComment(string word)
+        {
+            lock (Users)
+            {
+                string userName, photo, comment;
+                GetDataComment(word, out userName, out photo, out comment);
+                Photo photoToComment = GetPhoto(userName, photo);
+                photoToComment.Comments.Add(comment);
+            }
+        }
+
+        private void GetDataComment(string word, out string userName,out string photo,out string comment)
+        {
+            var data = word.Split('%');
+            userName = data[0];
+            photo = data[1];
+            comment = data[2];
         }
 
         private void ReciveFile2(Socket socket)
@@ -263,6 +304,34 @@ namespace Server
                 return Users.Where
                     (x => x.Username.Equals(username) && x.Password.Equals(password)).FirstOrDefault();
             }
+        }
+
+        private static User GetUserByName (string userName)
+        {
+            lock (Users)
+            {
+                return Users.Where
+                    (x => x.Username.Equals(userName)).FirstOrDefault();
+            }
+        }
+
+        private static Photo GetPhoto (string userName, string photo)
+        {
+            
+            lock (Users)
+            {
+                User user = GetUserByName(userName);
+                List<Photo> photos = user.Photos;
+                foreach(Photo p in photos)
+                {
+                    if (p.Equals(photo))
+                    {
+                        return p;
+                    }
+                }
+                throw new Exception("No existe foto");
+            }
+            
         }
         
         private static User CreateUser(string username, string password)

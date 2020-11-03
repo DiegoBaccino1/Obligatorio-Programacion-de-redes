@@ -118,10 +118,19 @@ namespace Cliente
                             break;
                         case 6:
                             command = CommandConstants.ViewComents;
+                            Console.WriteLine("Seleccione foto");
+                            string photo = Console.ReadLine();
+                            data = username + SEPARATOR + photo;
                             break;
                         case 7:
                             command = CommandConstants.AddComent;
-                            data = Console.ReadLine();
+                            Console.WriteLine("Seleccione  usuario");
+                            string userComment = Console.ReadLine();
+                            Console.WriteLine("Seleccione foto");
+                            photo = Console.ReadLine();
+                            Console.WriteLine("Ingrese comentario");
+                            string comment = Console.ReadLine();
+                            data = userComment + SEPARATOR + photo + SEPARATOR + comment;
                             break;
                         default:
                             Console.WriteLine("Invalid command");
