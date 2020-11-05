@@ -131,6 +131,7 @@ namespace Server
                         byte[] fileBytes = (byte[])result.objectResult;
                         IFileSenderHandler senderHandler = new FileSenderHandler();
                         senderHandler.Write(fileName, fileBytes);
+                        Console.WriteLine(Directory.GetCurrentDirectory());
                         break;
                     default:
                         Console.WriteLine("Invalid command");
