@@ -12,6 +12,9 @@ using MyMessaging;
 using MyMessaging.DataTransfer;
 using Common.Interfaces;
 using System.IO;
+using RabbitMQ.Client;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Server
 {
@@ -52,97 +55,122 @@ namespace Server
 
                 new Thread(() => HandleClient(_clientSocket)).Start();
             }
-
         }
 
         public void HandleClient(Socket socket)
         {
+
             DataTransferSuper transfer = new StringDataTransfer();
             Response response = new StringResponse();
             User user;
             string fileName = "";
-            while (true)
-            {
-                DataTransferResult result = transfer.RecieveData(socket);
 
-                int command=result.Header.GetCommand();
-                int dataLength= result.Header.GetDataLength();
-                string direction= result.Header.GetDirection();
-                string word = "";
-                
-                if (command != 31)
+            var factory = new ConnectionFactory() { HostName = "localhost" };
+            using (var connection = factory.CreateConnection())
+            using (var channel = connection.CreateModel())
+            {
+                channel.QueueDeclare(queue: "Success",
+                    durable: true,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null);
+
+                while (true)
                 {
-                    word = (string)result.objectResult;
-                };
-                dynamic responseData;
-                switch (command)
-                {
-                    case CommandConstants.Login:
-                        try
-                        {
-                            user = Login(word);
-                            response = new StringResponse();
-                            responseData = "true";
-                            response.SendResponse(command, responseData, socket, responseData.Length);
+                    DataTransferResult result = transfer.RecieveData(socket);
+
+                    int command = result.Header.GetCommand();
+                    int dataLength = result.Header.GetDataLength();
+                    string direction = result.Header.GetDirection();
+                    string word = "";
+
+                    if (command != 31)
+                    {
+                        word = (string)result.objectResult;
+                    };
+                    dynamic responseData;
+                    switch (command)
+                    {
+                        case CommandConstants.Login:
+                            try
+                            {
+                                user = Login(word);
+                                response = new StringResponse();
+                                responseData = "true";
+                                response.SendResponse(command, responseData, socket, responseData.Length);
+                                SendLog(channel,"Ok");
+                                break;
+                            }
+                            catch (Exception)
+                            {
+                                response = new StringResponse();
+                                responseData = "false";
+                                response.SendResponse(command, responseData, socket, responseData.Length);
+                                SendLog(channel, "Error");
+                                break;
+                            }
+                        case CommandConstants.SignUp:
+                            try
+                            {
+                                SignUp(word);
+                                //response = new StringResponse();
+                                //responseData = "true";
+                                //response.SendResponse(command, responseData, socket, responseData.Length);
+                                break;
+                            }
+                            catch (UserAlreadyExistException)
+                            {
+                                break;
+                            }
+                        case CommandConstants.ListUsers:
+                            List<string> usersList = GetUsers();
+                            response = new ListStringResponse();
+                            responseData = usersList;
+                            int responseDataLength = ListStringDataTransfer.ListLength(usersList);
+                            response.SendResponse(command, responseData, socket, responseDataLength);
                             break;
-                        }
-                        catch (Exception)
-                        {
-                            response = new StringResponse();
-                            responseData = "false";
-                            response.SendResponse(command, responseData, socket, responseData.Length);
+                        case CommandConstants.ListFiles:
+                            User userPhoto = new User();
+                            userPhoto.Username = word;
+                            List<string> fileList = GetUserPhotos(userPhoto);
+                            response = new ListStringResponse();
+                            responseData = fileList;
+                            responseDataLength = ListStringDataTransfer.ListLength(fileList);
+                            response.SendResponse(command, responseData, socket, responseDataLength);
                             break;
-                        }
-                    case CommandConstants.SignUp:
-                        try
-                        {
-                            SignUp(word);
-                            //response = new StringResponse();
-                            //responseData = "true";
-                            //response.SendResponse(command, responseData, socket, responseData.Length);
+                        case CommandConstants.UploadFile:
+                            long fileSize;
+                            ReciveFileData(word, out fileName, out fileSize);
+                            transfer = new ByteDataTransfer();
                             break;
-                        }
-                        catch (UserAlreadyExistException)
-                        {
+                        case CommandConstants.UploadFileSignal:
+                            byte[] fileBytes = (byte[])result.objectResult;
+                            IFileSenderHandler senderHandler = new FileSenderHandler();
+                            senderHandler.Write(fileName, fileBytes);
+                            Console.WriteLine(Directory.GetCurrentDirectory());
                             break;
-                        }
-                    case CommandConstants.ListUsers:
-                        List<string> usersList = GetUsers();
-                        response = new ListStringResponse();
-                        responseData = usersList;
-                        int responseDataLength = ListStringDataTransfer.ListLength(usersList);
-                        response.SendResponse(command, responseData, socket, responseDataLength);
-                        break;
-                    case CommandConstants.ListFiles:
-                        User userPhoto = new User();
-                        userPhoto.Username = word;
-                        List<string> fileList = GetUserPhotos(userPhoto);
-                        response = new ListStringResponse();
-                        responseData = fileList;
-                        responseDataLength = ListStringDataTransfer.ListLength(fileList);
-                        response.SendResponse(command, responseData, socket, responseDataLength);
-                        break;
-                    case CommandConstants.UploadFile:
-                        long fileSize;
-                        ReciveFileData(word,out fileName,out fileSize);
-                        transfer = new ByteDataTransfer();
-                        break;
-                    case CommandConstants.UploadFileSignal:
-                        byte[] fileBytes = (byte[])result.objectResult;
-                        IFileSenderHandler senderHandler = new FileSenderHandler();
-                        senderHandler.Write(fileName, fileBytes);
-                        Console.WriteLine(Directory.GetCurrentDirectory());
-                        break;
-                    default:
-                        Console.WriteLine("Invalid command");
-                        break;
+                        default:
+                            Console.WriteLine("Invalid command");
+                            break;
+                    }
                 }
             }
         }
 
-        private void ReciveFile2(Socket socket)
+        private static void SendLog(IModel channel, string log)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var logBody = Encoding.UTF8.GetBytes(log);
+                channel.BasicPublish(exchange: "",
+                    routingKey: "Success",
+                    basicProperties: null,
+                    body: logBody);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         private void ReciveFileData(string data,out string fileName,out long fileSize)

@@ -15,6 +15,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptions", "Exceptions\Ex
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyMessaging", "MyMessaging\MyMessaging.csproj", "{1495A669-25D7-46E2-94ED-684BA958F80C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LogServer", "LogServer", "{DEBB68E4-8777-4D18-841A-E889B0F6169A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogServer", "LogServer\LogServer.csproj", "{9E633394-FADA-45B2-9A08-35E1865899F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consumers", "Consumer\Consumers.csproj", "{A3CEB312-599E-4E88-B0A9-312C46DFF91C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,9 +103,37 @@ Global
 		{1495A669-25D7-46E2-94ED-684BA958F80C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1495A669-25D7-46E2-94ED-684BA958F80C}.Release|x64.ActiveCfg = Release|x64
 		{1495A669-25D7-46E2-94ED-684BA958F80C}.Release|x64.Build.0 = Release|x64
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.Debug|x64.Build.0 = Debug|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.qwe|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.qwe|Any CPU.Build.0 = Debug|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.qwe|x64.ActiveCfg = Debug|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.qwe|x64.Build.0 = Debug|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.Release|x64.ActiveCfg = Release|Any CPU
+		{9E633394-FADA-45B2-9A08-35E1865899F8}.Release|x64.Build.0 = Release|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.Debug|x64.Build.0 = Debug|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.qwe|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.qwe|Any CPU.Build.0 = Debug|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.qwe|x64.ActiveCfg = Debug|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.qwe|x64.Build.0 = Debug|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.Release|x64.ActiveCfg = Release|Any CPU
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9E633394-FADA-45B2-9A08-35E1865899F8} = {DEBB68E4-8777-4D18-841A-E889B0F6169A}
+		{A3CEB312-599E-4E88-B0A9-312C46DFF91C} = {DEBB68E4-8777-4D18-841A-E889B0F6169A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9AB4573E-E95B-455F-9CE7-53B1E4B166A2}
