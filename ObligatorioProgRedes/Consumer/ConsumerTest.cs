@@ -1,4 +1,6 @@
 ﻿using Consumers;
+using Entities;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,14 +13,26 @@ namespace Consumer
     {
         protected override object GetMessage(byte[] body)
         {
-            return Encoding.UTF8.GetString(body);
+            Log log = new Log();
+            string logString = Encoding.UTF8.GetString(body);
+            log = JsonConvert.DeserializeObject<Log>(logString);
+            return log;
         }
 
         protected override object ProcessMessage(object message)
         {
-            Console.WriteLine(message);
-            Console.ReadLine();
-            return null; 
+            try
+            {
+                Log log = (Log)message;
+                Console.WriteLine(log.Message);
+                Console.ReadLine();
+                return null;
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return null;
+            }
         }
     }
 }

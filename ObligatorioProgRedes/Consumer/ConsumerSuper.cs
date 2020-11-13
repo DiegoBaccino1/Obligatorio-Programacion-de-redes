@@ -10,17 +10,16 @@ namespace Consumers
 {
     public abstract class ConsumerSuper
     {
-        public void Consume(IModel channel)
+        public void Consume(IModel channel,string queueName)
         {
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
                 var body = ea.Body.ToArray();
                 var message = GetMessage(body);
-                Console.WriteLine(message);
                 ProcessMessage(message);
             };
-            channel.BasicConsume(queue: "Success", autoAck: false, consumer);
+            channel.BasicConsume(queue: queueName, autoAck: false, consumer);
         }
         protected abstract object GetMessage(byte[] body);
         protected abstract object ProcessMessage(object message);

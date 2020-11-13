@@ -22,7 +22,6 @@ namespace Server
             var codedMessge = DataTransfer.GenMenssage(mensaje, header);
 
             Console.WriteLine(DataTransfer.DecodeMessage(codedMessge));
-
         }
     }
 }

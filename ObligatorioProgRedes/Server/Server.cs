@@ -15,6 +15,9 @@ using System.IO;
 using RabbitMQ.Client;
 using System.Text;
 using System.Threading.Tasks;
+using LogServerImp;
+using LogServerImp.LogServerRabbitMQ;
+using Entities;
 
 namespace Server
 {
@@ -64,17 +67,6 @@ namespace Server
             Response response = new StringResponse();
             User user;
             string fileName = "";
-
-            var factory = new ConnectionFactory() { HostName = "localhost" };
-            using (var connection = factory.CreateConnection())
-            using (var channel = connection.CreateModel())
-            {
-                channel.QueueDeclare(queue: "Success",
-                    durable: true,
-                    exclusive: false,
-                    autoDelete: false,
-                    arguments: null);
-
                 while (true)
                 {
                     DataTransferResult result = transfer.RecieveData(socket);
@@ -98,7 +90,7 @@ namespace Server
                                 response = new StringResponse();
                                 responseData = "true";
                                 response.SendResponse(command, responseData, socket, responseData.Length);
-                                SendLog(channel,"Ok");
+                                SendLog("Ok");
                                 break;
                             }
                             catch (Exception)
@@ -106,7 +98,6 @@ namespace Server
                                 response = new StringResponse();
                                 responseData = "false";
                                 response.SendResponse(command, responseData, socket, responseData.Length);
-                                SendLog(channel, "Error");
                                 break;
                             }
                         case CommandConstants.SignUp:
@@ -155,22 +146,12 @@ namespace Server
                     }
                 }
             }
-        }
 
-        private static void SendLog(IModel channel, string log)
+        private static void SendLog(string message)
         {
-            try
-            {
-                var logBody = Encoding.UTF8.GetBytes(log);
-                channel.BasicPublish(exchange: "",
-                    routingKey: "Success",
-                    basicProperties: null,
-                    body: logBody);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
+            ILogServer logServer = new LogServerRabbitMQ();
+            Log log = new Log() { Message=message};
+            logServer.PublishLog(log);
         }
 
         private void ReciveFileData(string data,out string fileName,out long fileSize)
@@ -319,18 +300,5 @@ namespace Server
                     throw new UserAlreadyExistException();
             }
         }
-
-        //private static void Response(int command,string message,Socket socket)
-        //{
-        //    Header header = new Header(HeaderConstants.Response, command, message.Length);
-        //    var byteMessage=DataTransfer.GenMenssage(message, header);
-        //    DataTransfer.SendData(byteMessage,socket);
-        //}
-
-        //private static bool BoolResponse(int command)
-        //{
-        //    return command == CommandConstants.Login || command == CommandConstants.AddComent
-        //|| command == CommandConstants.SignUp || command == CommandConstants.UploadFile;
-        //}
     }
 }

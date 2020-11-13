@@ -77,6 +77,10 @@
       <Project>{A3CEB312-599E-4E88-B0A9-312C46DFF91C}</Project>
       <Name>Consumers</Name>
     </ProjectReference>
+    <ProjectReference Include="..\LogServerImp\LogServerImp.csproj">
+      <Project>{8063F9BA-4461-47E5-80A0-C6FA4C7571CC}</Project>
+      <Name>LogServerImp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
