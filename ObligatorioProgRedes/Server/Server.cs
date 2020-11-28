@@ -275,7 +275,7 @@ namespace Server
             }
         }
         
-        private static User CreateUser(string username, string password)
+        public static User CreateUser(string username, string password)
         {
             User user = new User();
             user.Username = username;
@@ -284,21 +284,66 @@ namespace Server
             return user;
         }
 
-        private static void SignUp(string credentials)
+        public static bool SignUp(string credentials)
         {
             string username, password;
             GetCredentials(credentials, out username, out password);
-
             User user = CreateUser(username, password);
             lock (Users)
             {
                 if (!Users.Contains(user))
                 {
                     Users.Add(user);
+                    return true;
                 }
                 else
                     throw new UserAlreadyExistException();
             }
+        }
+        public static bool DeleteUser(string username)
+        {
+            bool ret=true;
+
+            try
+            {
+                lock (Users)
+                {
+                    for (int i = 0; i < Users.Count; i++)
+                    {
+                        User user = Users[i];
+                        if (user.Username.Equals(username))
+                        {
+                            Users.RemoveAt(i);
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                ret = false;
+            }
+            return ret;
+        }
+        public static bool ModifyUser(string username,string newCredentials)
+        {
+            string newUsername, newPassword;
+            GetCredentials(newCredentials, out newUsername, out newPassword);
+
+            bool ret = false;
+            lock (Users)
+            {
+                for (int i = 0; i < Users.Count; i++)
+                {
+                    User user = Users[i];
+                    if (user.Username.Equals(username))
+                    {
+                        user.Username = newUsername;
+                        user.Password = newPassword;
+                        ret = true;
+                    }
+                }
+            }
+            return ret;
         }
     }
 }

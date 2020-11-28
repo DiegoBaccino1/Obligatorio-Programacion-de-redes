@@ -12,8 +12,6 @@ namespace Server
     {
         static void Main(string[] args)
         {
-            Server server = new Server();
-            server.StartServer();
 
             string mensaje = "Hola bolso hoy te vinimo a ver";
 
