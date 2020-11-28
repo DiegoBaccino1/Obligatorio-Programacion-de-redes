@@ -198,11 +198,6 @@ namespace Server
             fullRecived = true;
         }
 
-        private void GetFileData(string fileData, out string fileName, out string fileSize)
-        {
-            throw new NotImplementedException();
-        }
-
         private List<string> GetUserPhotos(User userPhoto)
         {
             List<Photo> fileList = new List<Photo>();
