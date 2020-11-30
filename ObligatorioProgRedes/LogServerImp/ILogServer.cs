@@ -10,10 +10,8 @@ namespace LogServerImp
 {
     public abstract class ILogServer
     {
-        public const string QUEUE_NAME_SUCCESS = "Success";
-        public static List<Log> Logs { get; set; }
+        public const string QUEUE_NAME = "LogQueue";
         public abstract void PublishLog(Log log);
         public abstract object ConsumeLog(ConsumerSuper consumer);
-        public abstract List<string> GetLogs();
     }
 }

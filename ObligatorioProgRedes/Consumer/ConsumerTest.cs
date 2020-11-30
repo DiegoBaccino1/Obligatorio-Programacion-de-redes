@@ -11,6 +11,7 @@ namespace Consumer
 {
     public class ConsumerTest : ConsumerSuper
     {
+
         protected override object GetMessage(byte[] body)
         {
             Log log = new Log();
@@ -24,8 +25,7 @@ namespace Consumer
             try
             {
                 Log log = (Log)message;
-                Console.WriteLine(log.Message);
-                Console.ReadLine();
+                Console.WriteLine("El Username es: "+log.Username);
                 return null;
             }
             catch(Exception e)
@@ -33,6 +33,11 @@ namespace Consumer
                 Console.WriteLine(e.Message);
                 return null;
             }
+        }
+
+        protected override void SetACK()
+        {
+            this.ACK=false;
         }
     }
 }

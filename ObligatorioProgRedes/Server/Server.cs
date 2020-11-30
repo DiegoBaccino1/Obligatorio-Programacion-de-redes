@@ -12,11 +12,7 @@ using MyMessaging;
 using MyMessaging.DataTransfer;
 using Common.Interfaces;
 using System.IO;
-using RabbitMQ.Client;
-using System.Text;
-using System.Threading.Tasks;
 using LogServerImp;
-using LogServerImp.LogServerRabbitMQ;
 using Entities;
 
 namespace Server
@@ -81,6 +77,12 @@ namespace Server
                         word = (string)result.objectResult;
                     };
                     dynamic responseData;
+                    Log log = new Log()
+                    {
+                        Command = command,
+                        Date = DateTime.Now,
+                        Message = word,
+                    };
                     switch (command)
                     {
                         case CommandConstants.Login:
@@ -90,7 +92,9 @@ namespace Server
                                 response = new StringResponse();
                                 responseData = "true";
                                 response.SendResponse(command, responseData, socket, responseData.Length);
-                                SendLog("Ok");
+                                log.Level = Log.SUCCESS_LEVEL;
+                                log.Username = user.Username;
+                                SendLog(log);
                                 break;
                             }
                             catch (Exception)
@@ -98,7 +102,10 @@ namespace Server
                                 response = new StringResponse();
                                 responseData = "false";
                                 response.SendResponse(command, responseData, socket, responseData.Length);
-                                break;
+                                log.Level = Log.WARNING_LEVEL;
+                                log.Username = "N/A";
+                                SendLog(log);
+                            break;
                             }
                         case CommandConstants.SignUp:
                             try
@@ -147,10 +154,9 @@ namespace Server
                 }
             }
 
-        private static void SendLog(string message)
+        private static void SendLog(Log log)
         {
             ILogServer logServer = new LogServerRabbitMQ();
-            Log log = new Log() { Message=message};
             logServer.PublishLog(log);
         }
 

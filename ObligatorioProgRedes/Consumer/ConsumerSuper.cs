@@ -10,8 +10,10 @@ namespace Consumers
 {
     public abstract class ConsumerSuper
     {
+        protected bool ACK { get; set; } 
         public void Consume(IModel channel,string queueName)
         {
+            this.SetACK();
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
@@ -19,8 +21,9 @@ namespace Consumers
                 var message = GetMessage(body);
                 ProcessMessage(message);
             };
-            channel.BasicConsume(queue: queueName, autoAck: false, consumer);
+            channel.BasicConsume(queue: queueName, autoAck: ACK, consumer);
         }
+        protected abstract void SetACK();
         protected abstract object GetMessage(byte[] body);
         protected abstract object ProcessMessage(object message);
     }

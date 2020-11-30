@@ -67,7 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ILogServer.cs" />
-    <Compile Include="LogServerRabbitMQ\LogServerRabbitMQ.cs" />
+    <Compile Include="LogServerRabbitMQ.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -78,6 +78,10 @@
     <ProjectReference Include="..\Entities\Entities.csproj">
       <Project>{D0A7865F-2838-49D9-BEB0-A730EE328D77}</Project>
       <Name>Entities</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Repository\Repository.csproj">
+      <Project>{11F1E144-2625-42D8-9A5C-B307B488A269}</Project>
+      <Name>Repository</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
