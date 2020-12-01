@@ -9,7 +9,7 @@ namespace MyMessaging.Responses
 {
     public class StringResponse : Response
     {
-        StringDataTransfer transfer = new StringDataTransfer();
+        StringDataTransform transfer = new StringDataTransform();
         protected override byte[] CodeMessage(object obj, Header header)
         {
             return transfer.GenMenssage(obj, header);

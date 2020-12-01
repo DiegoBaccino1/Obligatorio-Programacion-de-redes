@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MyMessaging
 {
-    public class BoolDataTransfer : DataTransferSuper
+    public class BoolDataTransform : DataTransformSuper
     {
         protected override byte[] CastMessage(object obj)
         {
@@ -15,7 +15,7 @@ namespace MyMessaging
             return Encoding.UTF8.GetBytes(dataTransfer);
         }
 
-        protected override object DecodeMessage(byte[] data)
+        public override object DecodeMessage(byte[] data)
         {
             string rawData = Encoding.UTF8.GetString(data);
             return Boolean.Parse(rawData);

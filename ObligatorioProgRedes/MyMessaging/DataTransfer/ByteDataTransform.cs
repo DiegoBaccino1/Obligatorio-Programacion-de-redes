@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace MyMessaging.DataTransfer
 {
-    public class ByteDataTransfer : DataTransferSuper
+    public class ByteDataTransform : DataTransformSuper
     {
         protected override byte[] CastMessage(object obj)
         {
             return (byte[])obj;
         }
 
-        protected override object DecodeMessage(byte[] data)
+        public override object DecodeMessage(byte[] data)
         {
             return data;
         }

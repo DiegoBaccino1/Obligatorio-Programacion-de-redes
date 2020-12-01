@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using MyMessaging.DataTransfer;
+
 
 namespace MyMessaging.Responses
 {
@@ -16,7 +18,7 @@ namespace MyMessaging.Responses
         {
             Header header = new Header(HeaderConstants.Response, command, dataLength);
             var byteMessage = CodeMessage(data, header);
-            DataTransferSuper.SendData(byteMessage, socket);
+            DataTransference.DataTransference.SendData(byteMessage, socket);
         }
 
     }

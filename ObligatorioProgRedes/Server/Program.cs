@@ -1,4 +1,5 @@
 ﻿using Common;
+using Domain;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,9 @@ namespace Server
     {
         static void Main(string[] args)
         {
+
             Server server = new Server();
+
             server.StartServer();
 
             string mensaje = "Hola bolso hoy te vinimo a ver";
