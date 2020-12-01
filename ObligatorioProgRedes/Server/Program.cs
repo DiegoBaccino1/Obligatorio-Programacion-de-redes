@@ -14,10 +14,6 @@ namespace Server
         static void Main(string[] args)
         {
 
-            Server server = new Server();
-
-            server.StartServer();
-
             string mensaje = "Hola bolso hoy te vinimo a ver";
 
             Header header = new Header(HeaderConstants.Request,CommandConstants.Login, mensaje.Length);
@@ -25,7 +21,6 @@ namespace Server
             var codedMessge = DataTransfer.GenMenssage(mensaje, header);
 
             Console.WriteLine(DataTransfer.DecodeMessage(codedMessge));
-
         }
     }
 }

@@ -12,8 +12,10 @@ using MyMessaging;
 using MyMessaging.DataTransfer;
 using Common.Interfaces;
 using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using MyMessaging.DataTransference;
+using LogServerImp;
+using Entities;
+
 
 namespace Server
 {
@@ -66,20 +68,17 @@ namespace Server
 
                 new Thread(() => HandleClient(_clientSocket)).Start();
             }
-
         }
 
         public void HandleClient(Socket socket)
         {
             DataTransformSuper transfer = new StringDataTransform();
-            //DataTransference transfer = new DataTransference();
             Response response = new StringResponse();
             User user = new User();
             long fileSize = 0;
             string fileName = "";
-            while (true)
-            {
-
+                while (true)
+                {
                 DataTransferResult result = DataTransference.RecieveData(socket);
 
                 int command =result.Header.GetCommand();
@@ -94,36 +93,70 @@ namespace Server
                     word = (string)result.objectResult;
                 };
                 dynamic responseData;
-                switch (command)
-                {
-                    case CommandConstants.Login:
-                        try
-                        {
-                            user = Login(word);
-                            response = new StringResponse();
-                            responseData = "true";
-                            response.SendResponse(command, responseData, socket, responseData.Length);
+                Log log = new Log()
+                    {
+                        Command = command,
+                        Date = DateTime.Now,
+                        Message = word,
+                    };
+               
+                    switch (command)
+                    {
+                        case CommandConstants.Login:
+                            try
+                            {
+                                user = Login(word);
+                                response = new StringResponse();
+                                responseData = "true";
+                                response.SendResponse(command, responseData, socket, responseData.Length);
+                                log.Level = Log.SUCCESS_LEVEL;
+                                log.Username = user.Username;
+                                SendLog(log);
+                                break;
+                            }
+                            catch (Exception)
+                            {
+                                response = new StringResponse();
+                                responseData = "false";
+                                response.SendResponse(command, responseData, socket, responseData.Length);
+                                log.Level = Log.WARNING_LEVEL;
+                                log.Username = "N/A";
+                                SendLog(log);
                             break;
-                        }
-                        catch (Exception e)
-                        {
-                            //Console.WriteLine(e.Message);
-                            response = new StringResponse();
-                            responseData = "false";
-                            response.SendResponse(command, responseData, socket, responseData.Length);
+                            }
+                        case CommandConstants.SignUp:
+                            try
+                            {
+                                SignUp(word);
+                                //response = new StringResponse();
+                                //responseData = "true";
+                                //response.SendResponse(command, responseData, socket, responseData.Length);
+                                break;
+                            }
+                            catch (UserAlreadyExistException)
+                            {
+                                break;
+                            }
+                        case CommandConstants.ListUsers:
+                            List<string> usersList = GetUsers();
+                            response = new ListStringResponse();
+                            responseData = usersList;
+                            int responseDataLength = ListStringDataTransfer.ListLength(usersList);
+                            response.SendResponse(command, responseData, socket, responseDataLength);
                             break;
-                        }
-                    case CommandConstants.SignUp:
-                        try
-                        {
-                            SignUp(word);
-                            //response = new StringResponse();
-                            //responseData = "true";
-                            //response.SendResponse(command, responseData, socket, responseData.Length);
+                        case CommandConstants.ListFiles:
+                            User userPhoto = new User();
+                            userPhoto.Username = word;
+                            List<string> fileList = GetUserPhotos(userPhoto);
+                            response = new ListStringResponse();
+                            responseData = fileList;
+                            responseDataLength = ListStringDataTransfer.ListLength(fileList);
+                            response.SendResponse(command, responseData, socket, responseDataLength);
                             break;
-                        }
-                        catch (UserAlreadyExistException)
-                        {
+                        case CommandConstants.UploadFile:
+                            long fileSize;
+                            ReciveFileData(word, out fileName, out fileSize);
+                            transfer = new ByteDataTransfer();
                             break;
                         }
                     case CommandConstants.ListUsers:
@@ -186,7 +219,6 @@ namespace Server
                         break;
                 }
             }
-        }
 
         private void AddComment(string word)
         {
@@ -197,6 +229,11 @@ namespace Server
                 Photo photoToComment = GetPhoto(userName, photo);
                 photoToComment.Comments.Add(comment);
             }
+         }
+        private static void SendLog(Log log)
+        {
+            ILogServer logServer = new LogServerRabbitMQ();
+            logServer.PublishLog(log);
         }
 
         private void GetDataComment(string word, out string userName,out string photo,out string comment)
@@ -251,11 +288,6 @@ namespace Server
             //  /home/ltato                         /    miFoto.png
             bool fullRecived = true;
 
-        }
-
-        private void GetFileData(string fileData, out string fileName, out string fileSize)
-        {
-            throw new NotImplementedException();
         }
 
         private List<string> GetUserPhotos(User userPhoto)
@@ -362,7 +394,7 @@ namespace Server
             
         }
         
-        private static User CreateUser(string username, string password)
+        public static User CreateUser(string username, string password)
         {
             User user = new User();
             user.Username = username;
@@ -371,34 +403,66 @@ namespace Server
             return user;
         }
 
-        private static void SignUp(string credentials)
+        public static bool SignUp(string credentials)
         {
             string username, password;
             GetCredentials(credentials, out username, out password);
-
             User user = CreateUser(username, password);
             lock (Users)
             {
                 if (!Users.Contains(user))
                 {
                     Users.Add(user);
+                    return true;
                 }
                 else
                     throw new UserAlreadyExistException();
             }
         }
+        public static bool DeleteUser(string username)
+        {
+            bool ret=true;
 
-        //private static void Response(int command,string message,Socket socket)
-        //{
-        //    Header header = new Header(HeaderConstants.Response, command, message.Length);
-        //    var byteMessage=DataTransfer.GenMenssage(message, header);
-        //    DataTransfer.SendData(byteMessage,socket);
-        //}
+            try
+            {
+                lock (Users)
+                {
+                    for (int i = 0; i < Users.Count; i++)
+                    {
+                        User user = Users[i];
+                        if (user.Username.Equals(username))
+                        {
+                            Users.RemoveAt(i);
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                ret = false;
+            }
+            return ret;
+        }
+        public static bool ModifyUser(string username,string newCredentials)
+        {
+            string newUsername, newPassword;
+            GetCredentials(newCredentials, out newUsername, out newPassword);
 
-        //private static bool BoolResponse(int command)
-        //{
-        //    return command == CommandConstants.Login || command == CommandConstants.AddComent
-        //|| command == CommandConstants.SignUp || command == CommandConstants.UploadFile;
-        //}
+            bool ret = false;
+            lock (Users)
+            {
+                for (int i = 0; i < Users.Count; i++)
+                {
+                    User user = Users[i];
+                    if (user.Username.Equals(username))
+                    {
+                        user.Username = newUsername;
+                        user.Password = newPassword;
+                        ret = true;
+                    }
+                }
+            }
+            return ret;
+        }
     }
 }
