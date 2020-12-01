@@ -6,30 +6,16 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyMessaging
+namespace MyMessaging.DataTransference
 {
-    public abstract class DataTransferSuper
+    public class DataTransference
     {
-        protected abstract byte[] CastMessage(object obj);
-        protected abstract object DecodeMessage(byte[] data);
-        public byte[] GenMenssage(object message, Header header)
-        {
-            byte[] codedMessage = CastMessage(message);
-            byte[] headerBytes = header.GenRequest();
-
-            byte[] fullMessage = new byte[headerBytes.Length + codedMessage.Length];
-            Array.Copy(headerBytes, 0, fullMessage, 0, headerBytes.Length);
-            Array.Copy(codedMessage, 0, fullMessage, headerBytes.Length, codedMessage.Length);
-
-            return fullMessage;
-        }
-
         public static void SendData(byte[] message, Socket socket)
         {
             socket.Send(message, 0, message.Length, SocketFlags.None);
         }
 
-        public DataTransferResult RecieveData(Socket socket)
+        public static DataTransferResult RecieveData(Socket socket)
         {
             DataTransferResult result = new DataTransferResult();
             int dataLength;
@@ -55,10 +41,9 @@ namespace MyMessaging
                 received += socket.Receive(data, received, dataLength - received, SocketFlags.None);
             }
 
-            var word = DecodeMessage(data);
-            result.objectResult = word;
+            //var word = DecodeMessage(data);
+            result.objectResult = data;
             return result;
         }
-
     }
 }

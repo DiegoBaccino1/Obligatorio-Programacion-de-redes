@@ -12,8 +12,10 @@ using MyMessaging;
 using MyMessaging.DataTransfer;
 using Common.Interfaces;
 using System.IO;
+using MyMessaging.DataTransference;
 using LogServerImp;
 using Entities;
+
 
 namespace Server
 {
@@ -30,8 +32,9 @@ namespace Server
         private const int CONNECTIONS = 10;
 
         private static bool isServerUp = false;
+        public static List<Socket> _conectedClients = new List<Socket>();
 
-        private static List<User> Users = new List<User>();
+        public static List<User> Users = new List<User>();
         
 
         public void StartServer()
@@ -48,9 +51,20 @@ namespace Server
 
             Console.WriteLine("Listening.....");
 
+
+            User user = new User()
+            {
+                Username = "tato",
+                Password = "tato",
+            };
+
+            Users.Add(user);
+
             while (isServerUp)
             {
                 Socket _clientSocket = _server.Accept();
+
+                _conectedClients.Add(_clientSocket);
 
                 new Thread(() => HandleClient(_clientSocket)).Start();
             }
@@ -58,31 +72,34 @@ namespace Server
 
         public void HandleClient(Socket socket)
         {
-
-            DataTransferSuper transfer = new StringDataTransfer();
+            DataTransformSuper transfer = new StringDataTransform();
             Response response = new StringResponse();
-            User user;
+            User user = new User();
+            long fileSize = 0;
             string fileName = "";
                 while (true)
                 {
-                    DataTransferResult result = transfer.RecieveData(socket);
+                DataTransferResult result = DataTransference.RecieveData(socket);
 
-                    int command = result.Header.GetCommand();
-                    int dataLength = result.Header.GetDataLength();
-                    string direction = result.Header.GetDirection();
-                    string word = "";
-
-                    if (command != 31)
-                    {
-                        word = (string)result.objectResult;
-                    };
-                    dynamic responseData;
-                    Log log = new Log()
+                int command =result.Header.GetCommand();
+                int dataLength= result.Header.GetDataLength();
+                string direction= result.Header.GetDirection();
+                string word = "";
+                
+                if (command != 31)
+                {
+                    transfer = new StringDataTransform();
+                    result.objectResult = transfer.DecodeMessage((byte[])result.objectResult);
+                    word = (string)result.objectResult;
+                };
+                dynamic responseData;
+                Log log = new Log()
                     {
                         Command = command,
                         Date = DateTime.Now,
                         Message = word,
                     };
+               
                     switch (command)
                     {
                         case CommandConstants.Login:
@@ -141,24 +158,92 @@ namespace Server
                             ReciveFileData(word, out fileName, out fileSize);
                             transfer = new ByteDataTransfer();
                             break;
-                        case CommandConstants.UploadFileSignal:
-                            byte[] fileBytes = (byte[])result.objectResult;
-                            IFileSenderHandler senderHandler = new FileSenderHandler();
-                            senderHandler.Write(fileName, fileBytes);
-                            Console.WriteLine(Directory.GetCurrentDirectory());
-                            break;
-                        default:
-                            Console.WriteLine("Invalid command");
-                            break;
-                    }
+                        }
+                    case CommandConstants.ListUsers:
+                        List<string> usersList = GetUsers();
+                        response = new ListStringResponse();
+                        responseData = usersList;
+                        int responseDataLength = ListStringDataTransform.ListLength(usersList);
+                        response.SendResponse(command, responseData, socket, responseDataLength);
+                        break;
+
+                    case CommandConstants.ListFiles:
+                        User userPhoto = new User(); //TO DO ESTO HAY QUE MOVERLO DE ACA
+                        userPhoto.Username = word;
+                        List<string> fileList = GetUserPhotos(userPhoto);
+                        response = new ListStringResponse();
+                        responseData = fileList;
+                        responseDataLength = ListStringDataTransform.ListLength(fileList);
+                        response.SendResponse(command, responseData, socket, responseDataLength);
+                        break;
+
+                    case CommandConstants.UploadFile:
+                        ReciveFileData(word,out fileName,out fileSize);
+                        transfer = new ByteDataTransform();
+                        Photo photo1 = new Photo();
+                        photo1.Name = fileName;
+                        user.AddPhoto(photo1);
+                        break;
+
+                    case CommandConstants.UploadFileSignal:
+
+                        //transfer = new ByteDataTransform();
+                        byte[] fileBytes = (byte[])result.objectResult;
+                        IFileSenderHandler senderHandler = new FileSenderHandler();
+                        senderHandler.Write(fileName, fileBytes);
+                        //ReciveFile(fileSize, fileName, socket);
+                        break;
+                    case CommandConstants.AddComent:
+                        try
+                        {
+                            AddComment(word);
+                        }catch(Exception)
+                        {
+                        }
+                        break;
+                    case CommandConstants.ViewComents:
+                        List<string> comments;
+                        string userName, photo;
+                        GetCredentials(word,out userName, out photo);
+                        Photo photoForComments = GetPhoto(userName, photo);
+                        comments = photoForComments.Comments;
+
+                        response = new ListStringResponse();
+                        responseData = comments;
+                        responseDataLength = ListStringDataTransform.ListLength(comments);
+                        response.SendResponse(command, responseData, socket, responseDataLength);
+                        break;
+
+                    default:
+                        Console.WriteLine("Invalid command");
+                        break;
                 }
             }
 
+        private void AddComment(string word)
+        {
+            lock (Users)
+            {
+                string userName, photo, comment;
+                GetDataComment(word, out userName, out photo, out comment);
+                Photo photoToComment = GetPhoto(userName, photo);
+                photoToComment.Comments.Add(comment);
+            }
+         }
         private static void SendLog(Log log)
         {
             ILogServer logServer = new LogServerRabbitMQ();
             logServer.PublishLog(log);
         }
+
+        private void GetDataComment(string word, out string userName,out string photo,out string comment)
+        {
+            var data = word.Split('%');
+            userName = data[0];
+            photo = data[1];
+            comment = data[2];
+        }
+
 
         private void ReciveFileData(string data,out string fileName,out long fileSize)
         {
@@ -167,7 +252,7 @@ namespace Server
             fileSize = long.Parse(fileSizeAux);
         }
 
-        private void ReciveFile(long fileSize,string fileName, Socket socket,ref bool fullRecived)
+        private void ReciveFile(long fileSize,string fileName, Socket socket)
         {
             var segments = (fileSize / FileSenderHandler.FileSegmentSize);
             segments = segments * FileSenderHandler.FileSegmentSize == fileSize ? segments : segments + 1;
@@ -178,8 +263,8 @@ namespace Server
             IFileSenderHandler senderHandler = new FileSenderHandler();
             while (fileSize > offset)
             {
-                ByteDataTransfer transfer = new ByteDataTransfer();
-                DataTransferResult result = transfer.RecieveData(socket);
+                ByteDataTransform transfer = new ByteDataTransform();
+                DataTransferResult result = DataTransference.RecieveData(socket);
                 if (result.Header.GetCommand() == 31)
                 {
                     byte[] fileDataRecived = (byte[])result.objectResult;
@@ -201,7 +286,8 @@ namespace Server
            Console.WriteLine(Directory.GetCurrentDirectory());
 
             //  /home/ltato                         /    miFoto.png
-            fullRecived = true;
+            bool fullRecived = true;
+
         }
 
         private List<string> GetUserPhotos(User userPhoto)
@@ -218,6 +304,10 @@ namespace Server
                 }
             }
             List<string> result = new List<string>();
+            if(fileList.Count == 0)
+            {
+                return null;
+            }
             foreach(Photo photo in fileList)
             {
                 result.Add(photo.ToString());
@@ -274,6 +364,34 @@ namespace Server
                 return Users.Where
                     (x => x.Username.Equals(username) && x.Password.Equals(password)).FirstOrDefault();
             }
+        }
+
+        private static User GetUserByName (string userName)
+        {
+            lock (Users)
+            {
+                return Users.Where
+                    (x => x.Username.Equals(userName)).FirstOrDefault();
+            }
+        }
+
+        private static Photo GetPhoto (string userName, string photo)
+        {
+            
+            lock (Users)
+            {
+                User user = GetUserByName(userName);
+                List<Photo> photos = user.Photos;
+                foreach(Photo p in photos)
+                {
+                    if (p.Equals(photo))
+                    {
+                        return p;
+                    }
+                }
+                throw new Exception("No existe foto");
+            }
+            
         }
         
         public static User CreateUser(string username, string password)

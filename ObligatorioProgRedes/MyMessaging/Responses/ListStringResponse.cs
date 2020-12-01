@@ -10,7 +10,7 @@ namespace MyMessaging.Responses
 {
     public class ListStringResponse : Response
     {
-        ListStringDataTransfer transfer = new ListStringDataTransfer();
+        ListStringDataTransform transfer = new ListStringDataTransform();
         protected override byte[] CodeMessage(object obj, Header header)
         {
             return transfer.GenMenssage(obj,header);

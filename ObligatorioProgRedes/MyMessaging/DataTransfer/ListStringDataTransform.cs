@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MyMessaging.DataTransfer
 {
-    public class ListStringDataTransfer : DataTransferSuper
+    public class ListStringDataTransform : DataTransformSuper
     {
         private const char SEPARATOR_TRANSFER = '-';
 
@@ -30,7 +30,7 @@ namespace MyMessaging.DataTransfer
             }
             return ret.Length;
         }
-        protected override object DecodeMessage(byte[] data)
+        public override object DecodeMessage(byte[] data)
         {
             List<string> list = new List<string>();
             string stringData = Encoding.UTF8.GetString(data);

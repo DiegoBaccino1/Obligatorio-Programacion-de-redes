@@ -12,6 +12,7 @@ using MyMessaging.DataTransfer;
 using System.Runtime.InteropServices;
 using System.IO;
 using Common.Interfaces;
+using MyMessaging.DataTransference;
 
 namespace Cliente
 {
@@ -43,8 +44,8 @@ namespace Cliente
                 string username = "";
                 string userPassword = "";
                 Header header;
-                DataTransferSuper dataTransferReciver=new StringDataTransfer();
-                DataTransferSuper dataTransferSender = new StringDataTransfer();
+                DataTransformSuper dataTransferReciver = new StringDataTransform();
+                DataTransformSuper dataTransferSender = new StringDataTransform();
                 while (!exit)
                 {
                     DisplayStarMenu();
@@ -71,12 +72,13 @@ namespace Cliente
                     }
                     header = new Header(HeaderConstants.Request, option, credentials.Length);
                     var codedMessage = dataTransferSender.GenMenssage(credentials, header);
-                    DataTransferSuper.SendData(codedMessage, socket);
+                    DataTransference.SendData(codedMessage, socket);
                 }
-                dataTransferReciver = new StringDataTransfer();
-                DataTransferResult result = dataTransferReciver.RecieveData(socket);
-
-                dynamic resultData = (string)result.objectResult;
+                //dataTransferReciver = new StringDataTransfer();
+                DataTransferResult result = DataTransference.RecieveData(socket);
+                result.objectResult = dataTransferReciver.DecodeMessage((byte[])result.objectResult);
+                
+                dynamic resultData = result.objectResult;
                 bool isLogged =  Boolean.Parse(resultData);
                 
 
@@ -102,26 +104,37 @@ namespace Cliente
                             break;
                         case CommandConstants.ListUsers:
                             command = CommandConstants.ListUsers;
-                            dataTransferReciver = new ListStringDataTransfer();
-                            //result = dataTransfer.RecieveData(socket);
+                            dataTransferReciver = new ListStringDataTransform();
+                            //result = DataTransference.RecieveData(socket);
+                            needToSend = true;
                             //resultData = result.objectResult as List<string>;
                             //Display(resultData);
                             break;
-                        case 5:
+                        case CommandConstants.ListFiles:
                             command = CommandConstants.ListFiles;
                             Console.WriteLine("Ingrese el usuario");
                             data = Console.ReadLine();
-                            
-                            //dataTransferReciver = new ListStringDataTransfer();
-                            //result = dataTransferReciver.RecieveData(socket);
+                            dataTransferReciver = new ListStringDataTransform();
+                            //RequestUserPhotos(userName);
+                            //Display(ListFiles(userName, socket));
+                            needToSend = true;
 
                             break;
                         case 6:
                             command = CommandConstants.ViewComents;
+                            Console.WriteLine("Seleccione foto");
+                            string photo = Console.ReadLine();
+                            data = username + SEPARATOR + photo;
                             break;
                         case 7:
                             command = CommandConstants.AddComent;
-                            data = Console.ReadLine();
+                            Console.WriteLine("Seleccione  usuario");
+                            string userComment = Console.ReadLine();
+                            Console.WriteLine("Seleccione foto");
+                            photo = Console.ReadLine();
+                            Console.WriteLine("Ingrese comentario");
+                            string comment = Console.ReadLine();
+                            data = userComment + SEPARATOR + photo + SEPARATOR + comment;
                             break;
                         default:
                             Console.WriteLine("Invalid command");
@@ -131,9 +144,12 @@ namespace Cliente
                     {
                         header = new Header(HeaderConstants.Request, command, data.Length);
                         codedRequest = dataTransferSender.GenMenssage(data, header);
-                        DataTransferSuper.SendData(codedRequest, socket);
+                        DataTransference.SendData(codedRequest, socket);
 
-                        result = dataTransferReciver.RecieveData(socket);
+                        result = DataTransference.RecieveData(socket);
+                        result.objectResult = dataTransferReciver.DecodeMessage((byte[])result.objectResult);
+
+
                         resultData = result.objectResult as List<string>;
                         Display(resultData);
                     }
@@ -141,13 +157,37 @@ namespace Cliente
             }
             catch (Exception)
             {
+                Console.WriteLine("Ocurrio algun error con el servidor");
             }
+        }
+        public void RequestUserPhotos(string message)
+        {
+            DataTransformSuper dataTransferSender = new StringDataTransform();
+
+            Header header = new Header(HeaderConstants.Request, CommandConstants.ListFiles, message.Length);
+
+            var codedMesagge = dataTransferSender.GenMenssage(message, header);
+
+            DataTransference.SendData(codedMesagge, socket);
+        }
+        private List<string> ListFiles(string message, Socket socket)
+        {
+            DataTransformSuper dataTransferReciver = new StringDataTransform();
+            DataTransferResult result = new DataTransferResult();
+            result = DataTransference.RecieveData(socket);
+            
+            result.objectResult = dataTransferReciver.DecodeMessage((byte[])result.objectResult);
+
+            List<string> resultData = result.objectResult as List<string>;
+
+            return resultData;
+
         }
 
         private void SendFile(string path)
         {
             
-            DataTransferSuper dataTransferSender = new StringDataTransfer();
+            DataTransformSuper dataTransferSender = new StringDataTransform();
           
             IFileSenderHandler senderHandler = new FileSenderHandler();
             IFileHandler fileHandler = new FileHandler();
@@ -157,7 +197,7 @@ namespace Cliente
             Header header = new Header(HeaderConstants.Request, CommandConstants.UploadFile, message.Length);
 
             var codedMessage = dataTransferSender.GenMenssage(message, header);
-            DataTransferSuper.SendData(codedMessage, socket);
+            DataTransference.SendData(codedMessage, socket);
 
             long segments = (fileSize / FileSenderHandler.FileSegmentSize);
             segments = segments * FileSenderHandler.FileSegmentSize == fileSize ? segments : segments + 1;
@@ -184,12 +224,12 @@ namespace Cliente
                     currentSegments++;
                 }
 
-                dataTransferSender = new ByteDataTransfer();
+                dataTransferSender = new ByteDataTransform();
                 Header header1 = new Header(HeaderConstants.Request, CommandConstants.UploadFileSignal, size);
                 
                 var data = dataTransferSender.GenMenssage(fileData, header1);
-                Console.WriteLine("Mande paquete "+header1.GetCommand());
-                DataTransferSuper.SendData(data, socket);      
+                Console.WriteLine("Mande paquete " + currentSegments);
+                DataTransference.SendData(data, socket);      
             }
         }
 

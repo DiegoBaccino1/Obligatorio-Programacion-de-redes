@@ -9,7 +9,7 @@ namespace MyMessaging.Responses
 {
     public class BoolResponse : Response
     {
-        BoolDataTransfer transfer = new BoolDataTransfer();
+        BoolDataTransform transfer = new BoolDataTransform();
         protected override byte[] CodeMessage(object obj, Header header)
         {
             return transfer.GenMenssage(obj,header);
