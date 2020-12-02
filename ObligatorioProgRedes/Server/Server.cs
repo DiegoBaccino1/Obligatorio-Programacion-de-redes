@@ -77,15 +77,15 @@ namespace Server
             User user = new User();
             long fileSize = 0;
             string fileName = "";
-                while (true)
-                {
+            while (true)
+            {
                 DataTransferResult result = DataTransference.RecieveData(socket);
 
-                int command =result.Header.GetCommand();
-                int dataLength= result.Header.GetDataLength();
-                string direction= result.Header.GetDirection();
+                int command = result.Header.GetCommand();
+                int dataLength = result.Header.GetDataLength();
+                string direction = result.Header.GetDirection();
                 string word = "";
-                
+
                 if (command != 31)
                 {
                     transfer = new StringDataTransform();
@@ -94,69 +94,47 @@ namespace Server
                 };
                 dynamic responseData;
                 Log log = new Log()
-                    {
-                        Command = command,
-                        Date = DateTime.Now,
-                        Message = word,
-                    };
-               
-                    switch (command)
-                    {
-                        case CommandConstants.Login:
-                            try
-                            {
-                                user = Login(word);
-                                response = new StringResponse();
-                                responseData = "true";
-                                response.SendResponse(command, responseData, socket, responseData.Length);
-                                log.Level = Log.SUCCESS_LEVEL;
-                                log.Username = user.Username;
-                                SendLog(log);
-                                break;
-                            }
-                            catch (Exception)
-                            {
-                                response = new StringResponse();
-                                responseData = "false";
-                                response.SendResponse(command, responseData, socket, responseData.Length);
-                                log.Level = Log.WARNING_LEVEL;
-                                log.Username = "N/A";
-                                SendLog(log);
+                {
+                    Command = command,
+                    Date = DateTime.Now,
+                    Message = word,
+                };
+
+                switch (command)
+                {
+                    case CommandConstants.Login:
+                        try
+                        {
+                            user = Login(word);
+                            response = new StringResponse();
+                            responseData = "true";
+                            response.SendResponse(command, responseData, socket, responseData.Length);
+                            log.Level = Log.SUCCESS_LEVEL;
+                            log.Username = user.Username;
+                            SendLog(log);
                             break;
-                            }
-                        case CommandConstants.SignUp:
-                            try
-                            {
-                                SignUp(word);
-                                //response = new StringResponse();
-                                //responseData = "true";
-                                //response.SendResponse(command, responseData, socket, responseData.Length);
-                                break;
-                            }
-                            catch (UserAlreadyExistException)
-                            {
-                                break;
-                            }
-                        case CommandConstants.ListUsers:
-                            List<string> usersList = GetUsers();
-                            response = new ListStringResponse();
-                            responseData = usersList;
-                            int responseDataLength = ListStringDataTransfer.ListLength(usersList);
-                            response.SendResponse(command, responseData, socket, responseDataLength);
+                        }
+                        catch (Exception)
+                        {
+                            response = new StringResponse();
+                            responseData = "false";
+                            response.SendResponse(command, responseData, socket, responseData.Length);
+                            log.Level = Log.WARNING_LEVEL;
+                            log.Username = "N/A";
+                            SendLog(log);
                             break;
-                        case CommandConstants.ListFiles:
-                            User userPhoto = new User();
-                            userPhoto.Username = word;
-                            List<string> fileList = GetUserPhotos(userPhoto);
-                            response = new ListStringResponse();
-                            responseData = fileList;
-                            responseDataLength = ListStringDataTransfer.ListLength(fileList);
-                            response.SendResponse(command, responseData, socket, responseDataLength);
+                        }
+                    case CommandConstants.SignUp:
+                        try
+                        {
+                            SignUp(word);
+                            //response = new StringResponse();
+                            //responseData = "true";
+                            //response.SendResponse(command, responseData, socket, responseData.Length);
                             break;
-                        case CommandConstants.UploadFile:
-                            long fileSize;
-                            ReciveFileData(word, out fileName, out fileSize);
-                            transfer = new ByteDataTransfer();
+                        }
+                        catch (UserAlreadyExistException)
+                        {
                             break;
                         }
                     case CommandConstants.ListUsers:
@@ -168,7 +146,7 @@ namespace Server
                         break;
 
                     case CommandConstants.ListFiles:
-                        User userPhoto = new User(); //TO DO ESTO HAY QUE MOVERLO DE ACA
+                        User userPhoto = new User();
                         userPhoto.Username = word;
                         List<string> fileList = GetUserPhotos(userPhoto);
                         response = new ListStringResponse();
@@ -177,8 +155,23 @@ namespace Server
                         response.SendResponse(command, responseData, socket, responseDataLength);
                         break;
 
+                    /*                    case CommandConstants.UploadFile:
+                                            ReciveFileData(word, out fileName, out fileSize);
+                                            transfer = new ByteDataTransform();
+                                            break;
+
+                                        case CommandConstants.ListFiles:
+                                            User userPhoto = new User(); //TO DO ESTO HAY QUE MOVERLO DE ACA
+                                            userPhoto.Username = word;
+                                            List<string> fileList = GetUserPhotos(userPhoto);
+                                            response = new ListStringResponse();
+                                            responseData = fileList;
+                                            responseDataLength = ListStringDataTransform.ListLength(fileList);
+                                            response.SendResponse(command, responseData, socket, responseDataLength);
+                                            break;*/
+
                     case CommandConstants.UploadFile:
-                        ReciveFileData(word,out fileName,out fileSize);
+                        ReciveFileData(word, out fileName, out fileSize);
                         transfer = new ByteDataTransform();
                         Photo photo1 = new Photo();
                         photo1.Name = fileName;
@@ -197,14 +190,15 @@ namespace Server
                         try
                         {
                             AddComment(word);
-                        }catch(Exception)
+                        }
+                        catch (Exception)
                         {
                         }
                         break;
                     case CommandConstants.ViewComents:
                         List<string> comments;
                         string userName, photo;
-                        GetCredentials(word,out userName, out photo);
+                        GetCredentials(word, out userName, out photo);
                         Photo photoForComments = GetPhoto(userName, photo);
                         comments = photoForComments.Comments;
 
@@ -219,7 +213,7 @@ namespace Server
                         break;
                 }
             }
-
+        }
         private void AddComment(string word)
         {
             lock (Users)
