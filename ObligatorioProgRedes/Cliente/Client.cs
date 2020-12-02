@@ -136,6 +136,13 @@ namespace Cliente
                             string comment = Console.ReadLine();
                             data = userComment + SEPARATOR + photo + SEPARATOR + comment;
                             break;
+                        case CommandConstants.Disconnect:
+                            socket.Shutdown(SocketShutdown.Both);
+                            socket.Close();
+                            Console.WriteLine("Shuting down connection");
+                            isLogged = false;
+                            break;
+
                         default:
                             Console.WriteLine("Invalid command");
                             break;
@@ -251,13 +258,18 @@ namespace Cliente
 
         private static int GetOption(int option)
         {
-            try
+            bool exit = false;
+            while (!exit)
             {
-                option = Int32.Parse(Console.ReadLine());
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("Invalid Option");
+                try
+                {
+                    option = Int32.Parse(Console.ReadLine());
+                    exit = true;
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Invalid Option");
+                }
             }
             return option;
         }
@@ -269,6 +281,7 @@ namespace Cliente
             Console.WriteLine(CommandConstants.ListFiles+"- Listado de fotos de un usuario\n");
             Console.WriteLine(CommandConstants.ViewComents+"- Ver comentarios de una foto\n");
             Console.WriteLine(CommandConstants.AddComent+"- Agregar comentarios a una foto\n");
+            Console.WriteLine(CommandConstants.Disconnect + "- Desconectar\n");
         }
     }
 }

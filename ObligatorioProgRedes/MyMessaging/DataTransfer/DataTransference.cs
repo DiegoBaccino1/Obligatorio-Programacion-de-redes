@@ -23,27 +23,39 @@ namespace MyMessaging.DataTransference
             int headerLength = HeaderConstants.GetLength();
             var headerBytes = new byte[headerLength];
             int received = 0;
-
-            while (received < headerLength)
+            bool exit = false;
+            while (received < headerLength && !exit)
             {
-                received += socket.Receive(headerBytes, received, headerLength - received, SocketFlags.None);
-
+                try
+                {
+                    received += socket.Receive(headerBytes, received, headerLength - received, SocketFlags.None);
+                    if (received == 0)
+                        exit = true;
+                }catch (System.Net.Sockets.SocketException)
+                {
+                    exit = true;
+                    Console.WriteLine("La conexion se cerro de forma abrupta");
+                }
             }
-
-            Header header = new Header(headerBytes);
-            result.Header = header;
-            dataLength = header.GetDataLength();
-
-            var data = new byte[dataLength];
-            received = 0;
-            while (received < dataLength)
+            if (!exit)
             {
-                received += socket.Receive(data, received, dataLength - received, SocketFlags.None);
-            }
+                Header header = new Header(headerBytes);
+                result.Header = header;
+                dataLength = header.GetDataLength();
 
-            //var word = DecodeMessage(data);
-            result.objectResult = data;
-            return result;
+                var data = new byte[dataLength];
+                received = 0;
+                while (received < dataLength)
+                {
+                    received += socket.Receive(data, received, dataLength - received, SocketFlags.None);
+                }
+
+                //var word = DecodeMessage(data);
+                result.objectResult = data;
+                return result;
+            }
+            else
+                return null;
         }
     }
 }

@@ -10,17 +10,12 @@ namespace Common
     {
         public const int SignUp = 1;
         public const int Login = 2;
-        //Andres
         public const int UploadFile = 3;
         public const int UploadFileSignal = 31;
-        //Diego
-        public const  int ListUsers = 4;
-        //Andres
+        public const int ListUsers = 4;
         public const int ListFiles = 5;
-        //-------------Miercoles-------------
-
         public const int ViewComents = 6;
         public const int AddComent = 7;
-        //-------------Viernes-------------
+        public const int Disconnect = 8;
     }
 }

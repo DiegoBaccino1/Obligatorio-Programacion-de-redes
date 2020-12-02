@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
@@ -14,6 +9,7 @@ namespace Server
         public static void Main(string[] args)
         {
             Server server = new Server();
+            Server.isServerUp = true;
             new Thread(() => server.StartServer()).Start();
             CreateHostBuilder(args).Build().Run();
         }
