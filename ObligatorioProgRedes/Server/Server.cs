@@ -119,20 +119,21 @@ namespace Server
                     int dataLength = result.Header.GetDataLength();
                     string direction = result.Header.GetDirection();
                     string word = "";
-
+                    Log log = new Log()
+                    {
+                        Command = command,
+                        Date = DateTime.Now,
+                        
+                    };
                     if (command != 31)
                     {
                         transfer = new StringDataTransform();
                         result.objectResult = transfer.DecodeMessage((byte[])result.objectResult);
                         word = (string)result.objectResult;
+                        log.Message = word;
                     };
                     dynamic responseData;
-                    Log log = new Log()
-                    {
-                        Command = command,
-                        Date = DateTime.Now,
-                        Message = word,
-                    };
+                    
 
                     switch (command)
                     {
@@ -143,9 +144,7 @@ namespace Server
                                 response = new StringResponse();
                                 responseData = "true";
                                 response.SendResponse(command, responseData, socket, responseData.Length);
-                                log.Level = Log.SUCCESS_LEVEL;
-                                log.Username = user.Username;
-                                SendLog(log);
+                                SendSuccessfullLog(user, log);
                                 break;
                             }
                             catch (Exception)
@@ -153,9 +152,7 @@ namespace Server
                                 response = new StringResponse();
                                 responseData = "false";
                                 response.SendResponse(command, responseData, socket, responseData.Length);
-                                log.Level = Log.WARNING_LEVEL;
-                                log.Username = "N/A";
-                                SendLog(log);
+                                SendWariningLog(log);
                                 break;
                             }
                         case CommandConstants.SignUp:
@@ -165,10 +162,12 @@ namespace Server
                                 //response = new StringResponse();
                                 //responseData = "true";
                                 //response.SendResponse(command, responseData, socket, responseData.Length);
+                                SendSuccessfullLog(user, log);
                                 break;
                             }
                             catch (UserAlreadyExistException)
                             {
+                                SendWarningLog(log);
                                 break;
                             }
                         case CommandConstants.ListUsers:
@@ -177,6 +176,7 @@ namespace Server
                             responseData = usersList;
                             int responseDataLength = ListStringDataTransform.ListLength(usersList);
                             response.SendResponse(command, responseData, socket, responseDataLength);
+                            SendSuccessfullLog(user, log);
                             break;
 
                         case CommandConstants.ListFiles:
@@ -187,6 +187,7 @@ namespace Server
                             responseData = fileList;
                             responseDataLength = ListStringDataTransform.ListLength(fileList);
                             response.SendResponse(command, responseData, socket, responseDataLength);
+                            SendSuccessfullLog(user, log);
                             break;
 
                         case CommandConstants.UploadFile:
@@ -195,20 +196,26 @@ namespace Server
                             Photo photo1 = new Photo();
                             photo1.Name = fileName;
                             user.AddPhoto(photo1);
+                            SendSuccessfullLog(user, log);
                             break;
 
                         case CommandConstants.UploadFileSignal:
                             byte[] fileBytes = (byte[])result.objectResult;
                             IFileSenderHandler senderHandler = new FileSenderHandler();
                             senderHandler.Write(fileName, fileBytes);
+                            log.Username = user.Username;
+                            log.Message = "File part";
+                            SendLog(log);
                             break;
                         case CommandConstants.AddComent:
                             try
                             {
                                 AddComment(word);
+                                SendSuccessfullLog(user, log);
                             }
                             catch (Exception)
                             {
+                                SendWarningLog(log);
                             }
                             break;
                         case CommandConstants.ViewComents:
@@ -222,6 +229,7 @@ namespace Server
                             responseData = comments;
                             responseDataLength = ListStringDataTransform.ListLength(comments);
                             response.SendResponse(command, responseData, socket, responseDataLength);
+                            SendSuccessfullLog(user, log);
                             break;
 
                         default:
@@ -237,6 +245,21 @@ namespace Server
                 }
             }
         }
+
+        private static void SendWarningLog(Log log)
+        {
+            log.Level = Log.WARNING_LEVEL;
+            log.Username = "N/A";
+            SendLog(log);
+        }
+
+        private static void SendSuccessfullLog(User user, Log log)
+        {
+            log.Level = Log.SUCCESS_LEVEL;
+            log.Username = user.Username;
+            SendLog(log);
+        }
+
         private void AddComment(string word)
         {
             lock (Users)
