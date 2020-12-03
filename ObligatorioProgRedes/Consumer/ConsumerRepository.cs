@@ -37,7 +37,7 @@ namespace Consumers
 
         protected override void SetACK()
         {
-            this.ACK=false;
+            this.ACK=true;
         }
     }
 }
