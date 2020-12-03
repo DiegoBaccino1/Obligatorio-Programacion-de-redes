@@ -23,17 +23,9 @@ namespace Server
     {
         public static Socket _server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-        private const string HOST = "127.0.0.1";
+        private static IPAddress address = IPAddress.Parse(ConectionConstants.HOST);
 
-        private static IPAddress address = IPAddress.Parse(HOST);
-
-        private static int port = 6000;
-
-        public static IPEndPoint endPoint = new IPEndPoint(address, port);
-
-        private const int BUFFER_SIZE = 1024;
-
-        public const int CONNECTIONS = 10;
+        public static IPEndPoint endPoint = new IPEndPoint(address, ConectionConstants.SERVERPORT);
 
         public static bool isServerUp = false;
 
@@ -41,12 +33,11 @@ namespace Server
 
         public static List<User> Users = new List<User>();
 
-
         public void StartServer()
         {
             _server.Bind(endPoint);
 
-            _server.Listen(CONNECTIONS);
+            _server.Listen(ConectionConstants.CONNECTIONS);
 
             Console.WriteLine("Listening.....");
             while (isServerUp)
@@ -80,6 +71,7 @@ namespace Server
             }
             catch (SocketException)
             {
+                Console.WriteLine("Conexion cerrada");
             }
         }
         private int GetOption()
@@ -159,9 +151,6 @@ namespace Server
                             try
                             {
                                 SignUp(word);
-                                //response = new StringResponse();
-                                //responseData = "true";
-                                //response.SendResponse(command, responseData, socket, responseData.Length);
                                 SendSuccessfullLog(user, log);
                                 break;
                             }
@@ -171,31 +160,54 @@ namespace Server
                                 break;
                             }
                         case CommandConstants.ListUsers:
-                            List<string> usersList = GetUsers();
-                            response = new ListStringResponse();
-                            responseData = usersList;
-                            int responseDataLength = ListStringDataTransform.ListLength(usersList);
-                            response.SendResponse(command, responseData, socket, responseDataLength);
-                            SendSuccessfullLog(user, log);
-                            break;
+                            try
+                            {
+                                List<string> usersList = GetUsers();
+                                response = new ListStringResponse();
+                                responseData = usersList;
+                                int responseDataLength = ListStringDataTransform.ListLength(usersList);
+                                response.SendResponse(command, responseData, socket, responseDataLength);
+                                SendSuccessfullLog(user, log);
+                                break;
+                            }
+                            catch (Exception)
+                            {
+                                Console.WriteLine("Ocurrio un error al listar los usuarios");
+                                SendWarningLog(log);
+                                break;
+                            }
 
                         case CommandConstants.ListFiles:
-                            User userPhoto = new User();
-                            userPhoto.Username = word;
-                            List<string> fileList = GetUserPhotos(userPhoto);
-                            response = new ListStringResponse();
-                            responseData = fileList;
-                            responseDataLength = ListStringDataTransform.ListLength(fileList);
-                            response.SendResponse(command, responseData, socket, responseDataLength);
-                            SendSuccessfullLog(user, log);
-                            break;
-
+                            try
+                            {
+                                User userPhoto = new User();
+                                userPhoto.Username = word;
+                                List<string> fileList = GetUserPhotos(userPhoto);
+                                response = new ListStringResponse();
+                                responseData = fileList;
+                                int responseDataLength = ListStringDataTransform.ListLength(fileList);
+                                if (responseDataLength == 0) throw new Exception();
+                                response.SendResponse(command, responseData, socket, responseDataLength);
+                                SendSuccessfullLog(user, log);
+                                break;
+                            }
+                            catch (Exception)
+                            {
+                                Console.WriteLine("Ocurrio un problema al listar los archivos");
+                                response = new StringResponse();
+                                responseData = "Error al listar fotos";
+                                response.SendResponse(Common.CommandConstants.ErrorListing, responseData, socket, responseData.Length);
+                                SendWarningLog(log);
+                                break;
+                            }
                         case CommandConstants.UploadFile:
                             ReciveFileData(word, out fileName, out fileSize);
                             transfer = new ByteDataTransform();
                             Photo photo1 = new Photo();
                             photo1.Name = fileName;
+                            photo1.Comments = new List<string>();
                             user.AddPhoto(photo1);
+
                             SendSuccessfullLog(user, log);
                             break;
 
@@ -215,22 +227,34 @@ namespace Server
                             }
                             catch (Exception)
                             {
+                                Console.WriteLine("Ocurrio un problema al agregar el comentario");
                                 SendWarningLog(log);
                             }
                             break;
                         case CommandConstants.ViewComents:
-                            List<string> comments;
-                            string userName, photo;
-                            GetCredentials(word, out userName, out photo);
-                            Photo photoForComments = GetPhoto(userName, photo);
-                            comments = photoForComments.Comments;
+                            try
+                            {
+                                List<string> comments;
+                                string userName, photo;
+                                GetCredentials(word, out userName, out photo);
+                                Photo photoForComments = GetPhoto(userName, photo);
+                                comments = photoForComments.Comments;
 
-                            response = new ListStringResponse();
-                            responseData = comments;
-                            responseDataLength = ListStringDataTransform.ListLength(comments);
-                            response.SendResponse(command, responseData, socket, responseDataLength);
-                            SendSuccessfullLog(user, log);
-                            break;
+                                response = new ListStringResponse();
+                                responseData = comments;
+                                int responseDataLength = ListStringDataTransform.ListLength(comments);
+                                response.SendResponse(command, responseData, socket, responseDataLength);
+                                SendSuccessfullLog(user, log);
+                                break;
+                            }catch (Exception)
+                            {
+                                Console.WriteLine("Error al mostrar comentarios de la foto");
+                                response = new StringResponse();
+                                responseData = "Error al listar fotos";
+                                response.SendResponse(Common.CommandConstants.ErrorListing, responseData, socket, responseData.Length);
+                                SendWarningLog(log);
+                                break;
+                            }
 
                         default:
                             Console.WriteLine("Invalid command");
@@ -266,12 +290,19 @@ namespace Server
         }
         private void AddComment(string word)
         {
-            lock (Users)
+            try
             {
-                string userName, photo, comment;
-                GetDataComment(word, out userName, out photo, out comment);
-                Photo photoToComment = GetPhoto(userName, photo);
-                photoToComment.Comments.Add(comment);
+                lock (Users)
+                {
+                    string userName, photo, comment;
+                    GetDataComment(word, out userName, out photo, out comment);
+                    Photo photoToComment = GetPhoto(userName, photo);
+                    photoToComment.Comments.Add(comment);
+                }
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Ocurrio un error al agregar el comentario");
             }
         }
 
@@ -322,11 +353,6 @@ namespace Server
                     currentSegments++;
                 }
             }
-            Console.WriteLine(Directory.GetCurrentDirectory());
-
-            //  /home/ltato                         /    miFoto.png
-            bool fullRecived = true;
-
         }
 
         private List<string> GetUserPhotos(User userPhoto)
@@ -416,19 +442,26 @@ namespace Server
 
         private static Photo GetPhoto(string userName, string photo)
         {
-
-            lock (Users)
+            try
             {
-                User user = GetUserByName(userName);
-                List<Photo> photos = user.Photos;
-                foreach (Photo p in photos)
+                lock (Users)
                 {
-                    if (p.Equals(photo))
+                    User user = GetUserByName(userName);
+                    List<Photo> photos = user.Photos;
+                    foreach (Photo p in photos)
                     {
-                        return p;
+                        if (p.ToString().Equals(photo))
+                        {
+                            return p;
+                        }
                     }
+                    throw new Exception();
                 }
-                throw new Exception("No existe foto");
+            }
+            catch(Exception)
+            {
+                Console.WriteLine("No existe la foto");
+                return null;
             }
 
         }
@@ -478,6 +511,7 @@ namespace Server
             }
             catch (Exception)
             {
+                Console.WriteLine("Error al eliminar usuario");
                 ret = false;
             }
             return ret;

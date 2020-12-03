@@ -13,6 +13,8 @@ namespace Common
     {
         public const string OK_MESSAGE_RESPONSE = "OK";
 
+        public const string SEPARATOR = "%";
+
         public static byte[] GenMenssage(string message, Header header)
         {
             byte[] codedMessage = Encoding.UTF8.GetBytes(message);
