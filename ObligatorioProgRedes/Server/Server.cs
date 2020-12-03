@@ -61,6 +61,7 @@ namespace Server
                 if (serverOption == CommandConstants.Disconnect)
                     EndConnection();
             }
+            Console.WriteLine("Connection ended");
         }
 
         private void EndConnection()
@@ -79,7 +80,6 @@ namespace Server
             }
             catch (SocketException)
             {
-                Console.WriteLine("Connection ended");
             }
         }
         private int GetOption()
@@ -152,7 +152,7 @@ namespace Server
                                 response = new StringResponse();
                                 responseData = "false";
                                 response.SendResponse(command, responseData, socket, responseData.Length);
-                                SendWariningLog(log);
+                                SendWarningLog(log);
                                 break;
                             }
                         case CommandConstants.SignUp:
@@ -259,7 +259,11 @@ namespace Server
             log.Username = user.Username;
             SendLog(log);
         }
-
+        private static void SendLog(Log log)
+        {
+            ILogServer logServer = new LogServerRabbitMQ();
+            logServer.PublishLog(log);
+        }
         private void AddComment(string word)
         {
             lock (Users)
@@ -269,11 +273,6 @@ namespace Server
                 Photo photoToComment = GetPhoto(userName, photo);
                 photoToComment.Comments.Add(comment);
             }
-        }
-        private static void SendLog(Log log)
-        {
-            ILogServer logServer = new LogServerRabbitMQ();
-            logServer.PublishLog(log);
         }
 
         private void GetDataComment(string word, out string userName, out string photo, out string comment)
