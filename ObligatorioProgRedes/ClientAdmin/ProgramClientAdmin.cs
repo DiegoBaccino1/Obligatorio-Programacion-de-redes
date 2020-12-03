@@ -16,7 +16,9 @@ namespace ClientAdmin
         private const int EXIT = 7;
         private const string URI_USUARIO = "https://localhost:44358/Users";
         private const string URI_LOGS = "https://localhost:44381/Logs";
-        static async Task Main(string[] args)
+        private const string ERROR_REQUEST_MESSAGE = "No se pudo hacer la peticion";
+
+        public static async Task Main(string[] args)
         {
             HttpClient http = new HttpClient();
             Console.WriteLine("Bienvenido Admin...... ");
@@ -24,7 +26,6 @@ namespace ClientAdmin
             int option;
             string uri = "";
             string username = "";
-            HttpResponseMessage response;
             while (!exit)
             {
                 Menu();
@@ -37,8 +38,7 @@ namespace ClientAdmin
                         Console.WriteLine("Ingresar Contraseña");
                         string password = Console.ReadLine();
                         uri = $"{URI_USUARIO}?username={username}&password={password}";
-                        response = await http.PostAsync(uri, null);
-                        Console.WriteLine(await response.Content.ReadAsStringAsync());
+                        await PostRequest(uri, http);
                         break;
                     case MODIFY_USER:
                         Console.WriteLine("Ingresar el usuario que quiere modificar");
@@ -48,37 +48,81 @@ namespace ClientAdmin
                         string newUsername = Console.ReadLine();
                         Console.WriteLine("Ingresar la nueva contraseña");
                         string newPassword = Console.ReadLine();
-
                         uri = $"{URI_USUARIO}?username={username}&newPassword={newPassword}&newUsername={newUsername}";
-                        response = await http.PutAsync(uri, null);
-                        Console.WriteLine(await response.Content.ReadAsStringAsync());
+                        await PutRequest(uri, http);
                         break;
+
                     case DELETE_USUARIO:
                         Console.WriteLine("Ingresar Usuario que se quiere eliminar");
                         username = Console.ReadLine();
                         uri = $"{URI_USUARIO}?username={username}";
-                        response = await http.DeleteAsync(uri);
-                        Console.WriteLine(await response.Content.ReadAsStringAsync());
+                        await DeleteRequest(uri, http);
                         break;
                     case ALL_LOGS:
-                        response = await http.GetAsync(URI_LOGS);
-                        Console.WriteLine(await response.Content.ReadAsStringAsync());
+                        await GetRequest(URI_LOGS,http);
                         break;
                     case SUCCESS_LOGS:
                         uri = $"{URI_LOGS}/success";
-                        response = await http.GetAsync(uri);
-                        Console.WriteLine(await response.Content.ReadAsStringAsync());
+                        await GetRequest(uri, http);
                         break;
                     case WARNING_LOGS:
                         uri = $"{URI_LOGS}/warning";
-                        response = await http.GetAsync(uri);
-                        Console.WriteLine(await response.Content.ReadAsStringAsync());
+                        await GetRequest(uri, http);
                         break;
                     case EXIT:
                         exit = true;
                         http.Dispose();
+                        Console.WriteLine("Exiting.....");
                         break;
                 }
+            }
+        }
+
+        private static async Task GetRequest(string uri, HttpClient http)
+        {
+            try
+            {
+                var response = await http.GetAsync(uri);
+                Console.WriteLine(await response.Content.ReadAsStringAsync());
+            }catch (HttpRequestException)
+            {
+                Console.WriteLine(ERROR_REQUEST_MESSAGE);
+            }
+        }
+        private static async Task PostRequest(string uri, HttpClient http)
+        {
+            try
+            {
+                var response = await http.PostAsync(uri, null);
+                Console.WriteLine(await response.Content.ReadAsStringAsync());
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine(ERROR_REQUEST_MESSAGE);
+            }
+        }
+        private static async Task PutRequest(string uri, HttpClient http)
+        {
+            try
+            {
+                var response = await http.PutAsync(uri, null);
+                Console.WriteLine(await response.Content.ReadAsStringAsync());
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine(ERROR_REQUEST_MESSAGE);
+            }
+        }
+        private static async Task DeleteRequest(string uri, HttpClient http)
+        {
+            try
+            {
+                var response = await http.DeleteAsync(uri);
+                Console.WriteLine(await response.Content.ReadAsStringAsync());
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine(ERROR_REQUEST_MESSAGE);
             }
         }
 

@@ -50,7 +50,6 @@ namespace MyMessaging.DataTransference
                     received += socket.Receive(data, received, dataLength - received, SocketFlags.None);
                 }
 
-                //var word = DecodeMessage(data);
                 result.objectResult = data;
                 return result;
             }
