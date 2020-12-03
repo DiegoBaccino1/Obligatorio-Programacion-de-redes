@@ -17,5 +17,6 @@ namespace Common
         public const int ViewComents = 6;
         public const int AddComent = 7;
         public const int Disconnect = 8;
+        public const int ErrorListing = 30;
     }
 }

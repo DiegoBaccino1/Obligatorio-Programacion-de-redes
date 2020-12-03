@@ -18,12 +18,9 @@ namespace Cliente
 {
     public class Client
     {
-        private const string SEPARATOR = "%";//psar a common
+        private static readonly IPEndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse(ConectionConstants.HOST), 0);
 
-
-        private static readonly IPEndPoint clientEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 0);
-
-        private static readonly IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 6000);
+        private static readonly IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse(ConectionConstants.HOST), ConectionConstants.SERVERPORT);
 
         private static Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -55,7 +52,7 @@ namespace Cliente
                     username = Console.ReadLine();
                     Console.WriteLine("Ingrese Contrasenia\n");
                     userPassword = Console.ReadLine();
-                    credentials = username + SEPARATOR + userPassword;
+                    credentials = username + Common.DataTransfer.SEPARATOR + userPassword;
 
                     switch (option)
                     {
@@ -74,7 +71,6 @@ namespace Cliente
                     var codedMessage = dataTransferSender.GenMenssage(credentials, header);
                     DataTransference.SendData(codedMessage, socket);
                 }
-                //dataTransferReciver = new StringDataTransfer();
                 DataTransferResult result = DataTransference.RecieveData(socket);
                 result.objectResult = dataTransferReciver.DecodeMessage((byte[])result.objectResult);
                 
@@ -105,44 +101,43 @@ namespace Cliente
                         case CommandConstants.ListUsers:
                             command = CommandConstants.ListUsers;
                             dataTransferReciver = new ListStringDataTransform();
-                            //result = DataTransference.RecieveData(socket);
-                            needToSend = true;
-                            //resultData = result.objectResult as List<string>;
-                            //Display(resultData);
+                            NeedToSend(dataTransferSender, dataTransferReciver, Common.CommandConstants.ListUsers, data, socket);
+
                             break;
                         case CommandConstants.ListFiles:
                             command = CommandConstants.ListFiles;
                             Console.WriteLine("Ingrese el usuario");
                             data = Console.ReadLine();
                             dataTransferReciver = new ListStringDataTransform();
-                            //RequestUserPhotos(userName);
-                            //Display(ListFiles(userName, socket));
-                            needToSend = true;
-
+                            NeedToSend(dataTransferSender, dataTransferReciver, Common.CommandConstants.ListFiles, data, socket);
                             break;
                         case 6:
                             command = CommandConstants.ViewComents;
+                            NeedToSend(dataTransferSender, dataTransferReciver, Common.CommandConstants.ListFiles, username, socket);
                             Console.WriteLine("Seleccione foto");
                             string photo = Console.ReadLine();
-                            data = username + SEPARATOR + photo;
+                            data = username + Common.DataTransfer.SEPARATOR + photo;
+                            dataTransferReciver = new ListStringDataTransform();
+                            NeedToSend(dataTransferSender, dataTransferReciver, Common.CommandConstants.ViewComents, data, socket);
                             break;
                         case 7:
                             command = CommandConstants.AddComent;
+                            dataTransferReciver = new ListStringDataTransform();
+                            NeedToSend(dataTransferSender, dataTransferReciver, Common.CommandConstants.ListUsers,"",socket);
                             Console.WriteLine("Seleccione  usuario");
                             string userComment = Console.ReadLine();
+                            NeedToSend(dataTransferSender, dataTransferReciver, Common.CommandConstants.ListFiles, userComment, socket);
                             Console.WriteLine("Seleccione foto");
                             photo = Console.ReadLine();
                             Console.WriteLine("Ingrese comentario");
                             string comment = Console.ReadLine();
-                            data = userComment + SEPARATOR + photo + SEPARATOR + comment;
-                            break;
-                        case CommandConstants.Disconnect:
-                            socket.Shutdown(SocketShutdown.Both);
-                            socket.Close();
-                            Console.WriteLine("Shuting down connection");
-                            isLogged = false;
-                            break;
+                            data = userComment + Common.DataTransfer.SEPARATOR + photo + Common.DataTransfer.SEPARATOR + comment;
 
+                            header = new Header(HeaderConstants.Request, command, data.Length);
+                            codedRequest = dataTransferSender.GenMenssage(data, header);
+
+                            DataTransfer.SendData(codedRequest, socket);
+                            break;
                         default:
                             Console.WriteLine("Invalid command");
                             break;
@@ -151,14 +146,20 @@ namespace Cliente
                     {
                         header = new Header(HeaderConstants.Request, command, data.Length);
                         codedRequest = dataTransferSender.GenMenssage(data, header);
-                        DataTransference.SendData(codedRequest, socket);
 
                         result = DataTransference.RecieveData(socket);
-                        result.objectResult = dataTransferReciver.DecodeMessage((byte[])result.objectResult);
+                        if (result.Header.GetCommand() == CommandConstants.ErrorListing)
+                        {
+                            Console.WriteLine("No hay elementos para listar");
+                        }
+                        else
+                        {
+                            result.objectResult = dataTransferReciver.DecodeMessage((byte[])result.objectResult);
 
 
-                        resultData = result.objectResult as List<string>;
-                        Display(resultData);
+                            resultData = result.objectResult as List<string>;
+                            Display(resultData);
+                        }
                     }
                 }
             }
@@ -167,6 +168,31 @@ namespace Cliente
                 Console.WriteLine("Ocurrio algun error con el servidor");
             }
         }
+
+       public void NeedToSend(DataTransformSuper dataTransferSender, DataTransformSuper dataTransferReciver, int command, string data, Socket socket)
+       {
+            Header header = new Header(HeaderConstants.Request, command, data.Length);
+            
+            
+            byte [] codedRequest = dataTransferSender.GenMenssage(data, header);
+            DataTransference.SendData(codedRequest, socket);
+
+            DataTransferResult result = DataTransference.RecieveData(socket);
+            if (result.Header.GetCommand() == CommandConstants.ErrorListing)
+            {
+                Console.WriteLine("No hay elementos para listar");
+            }
+            else
+            {
+                result.objectResult = dataTransferReciver.DecodeMessage((byte[])result.objectResult);
+
+                List<string> resultData = new List<string>();
+                resultData = result.objectResult as List<string>;
+
+                Display(resultData);
+            }
+        }
+
         public void RequestUserPhotos(string message)
         {
             DataTransformSuper dataTransferSender = new StringDataTransform();
@@ -200,7 +226,7 @@ namespace Cliente
             IFileHandler fileHandler = new FileHandler();
             long fileSize = fileHandler.GetFileSize(path);
             string fileName = fileHandler.GetFileName(path);
-            string message = fileName+ SEPARATOR + fileSize;
+            string message = fileName+ Common.DataTransfer.SEPARATOR + fileSize;
             Header header = new Header(HeaderConstants.Request, CommandConstants.UploadFile, message.Length);
 
             var codedMessage = dataTransferSender.GenMenssage(message, header);
@@ -258,18 +284,13 @@ namespace Cliente
 
         private static int GetOption(int option)
         {
-            bool exit = false;
-            while (!exit)
+            try
             {
-                try
-                {
-                    option = Int32.Parse(Console.ReadLine());
-                    exit = true;
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("Invalid Option");
-                }
+                option = Int32.Parse(Console.ReadLine());
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Invalid Option");
             }
             return option;
         }
@@ -281,7 +302,6 @@ namespace Cliente
             Console.WriteLine(CommandConstants.ListFiles+"- Listado de fotos de un usuario\n");
             Console.WriteLine(CommandConstants.ViewComents+"- Ver comentarios de una foto\n");
             Console.WriteLine(CommandConstants.AddComent+"- Agregar comentarios a una foto\n");
-            Console.WriteLine(CommandConstants.Disconnect + "- Desconectar\n");
         }
     }
 }

@@ -16,5 +16,22 @@ namespace Domain
         {
             return this.Name;
         }
+
+        public override bool Equals(object obj)
+        {
+
+            try
+            {
+                if (obj == null || obj.GetType() != this.GetType()) throw new Exception();
+                Photo photo = (Photo)obj;
+                return photo.Name.Equals(this.Name);
+            }
+            catch(Exception)
+            {
+                return false;
+            }
+            
+            
+        }
     }
 }

@@ -56,6 +56,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandConstants.cs" />
+    <Compile Include="ConectionConstants.cs" />
     <Compile Include="DataTransfer.cs" />
     <Compile Include="DataTransferResult.cs" />
     <Compile Include="FileHandler.cs" />
